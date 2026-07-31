@@ -1,0 +1,214 @@
+import { AttendanceEntry, AttendanceStats, UserSettings } from '../types';
+import { parseISO, format, isSameMonth, subDays, differenceInCalendarDays, parse, getDaysInMonth } from 'date-fns';
+import { calculateLateMinutes } from './timeUtils';
+
+export function calculateAttendanceStats(
+  records: Record<string, AttendanceEntry>,
+  settings: UserSettings
+): AttendanceStats {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const todayEntry = records[todayStr] || null;
+
+  const entries = Object.values(records).filter(e => e && e.date);
+  const now = new Date();
+  const currentMonthEntries = entries.filter(e => {
+    const entryDate = parseISO(e.date);
+    return isSameMonth(entryDate, now);
+  });
+
+  // Today stats
+  const todayLogin = todayEntry?.loginTime || null;
+  const todayLogout = todayEntry?.logoutTime || null;
+  const todayWorkedMinutes = todayEntry?.workedMinutes || 0;
+
+  let expectedLogout: string | null = null;
+  if (todayLogin) {
+    const loginDate = new Date(todayLogin);
+    const expected = new Date(loginDate.getTime() + settings.targetWorkingHours * 60 * 60 * 1000);
+    expectedLogout = expected.toISOString();
+  }
+
+  let currentStatus: AttendanceStats['currentStatus'] = 'not_clocked_in';
+  if (todayEntry) {
+    currentStatus = todayEntry.status;
+  }
+
+  // Current Month Worked Hours
+  const currentMonthMinutes = currentMonthEntries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+  const currentMonthHours = Number((currentMonthMinutes / 60).toFixed(1));
+
+  // Valid login entries for averages
+  const validLogins = entries.filter(e => e.loginTime);
+  let avgLoginTime = '--:--';
+  if (validLogins.length > 0) {
+    let totalMinutesFromMidnight = 0;
+    validLogins.forEach(e => {
+      const d = new Date(e.loginTime!);
+      totalMinutesFromMidnight += d.getHours() * 60 + d.getMinutes();
+    });
+    const avgMins = Math.round(totalMinutesFromMidnight / validLogins.length);
+    const avgH = Math.floor(avgMins / 60);
+    const avgM = avgMins % 60;
+    const period = avgH >= 12 ? 'PM' : 'AM';
+    const displayH = avgH % 12 === 0 ? 12 : avgH % 12;
+    avgLoginTime = `${displayH.toString().padStart(2, '0')}:${avgM.toString().padStart(2, '0')} ${period}`;
+  }
+
+  // Valid logout entries
+  const validLogouts = entries.filter(e => e.logoutTime);
+  let avgLogoutTime = '--:--';
+  if (validLogouts.length > 0) {
+    let totalMinutesFromMidnight = 0;
+    validLogouts.forEach(e => {
+      const d = new Date(e.logoutTime!);
+      totalMinutesFromMidnight += d.getHours() * 60 + d.getMinutes();
+    });
+    const avgMins = Math.round(totalMinutesFromMidnight / validLogouts.length);
+    const avgH = Math.floor(avgMins / 60);
+    const avgM = avgMins % 60;
+    const period = avgH >= 12 ? 'PM' : 'AM';
+    const displayH = avgH % 12 === 0 ? 12 : avgH % 12;
+    avgLogoutTime = `${displayH.toString().padStart(2, '0')}:${avgM.toString().padStart(2, '0')} ${period}`;
+  }
+
+  // Late days count (Rule: ONLY logins after 12:30 PM cutoff are Late)
+  const lateDaysCount = entries.filter(e => {
+    if (e.status === 'vacation' || e.status === 'absent') return false;
+    if (e.loginTime) {
+      return calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0;
+    }
+    return false;
+  }).length;
+
+  // Work Shifts count (including Sundays as regular work days)
+  const activeWorkShifts = entries.filter(e => e.status !== 'vacation' && e.status !== 'absent');
+  const workingDaysTotal = activeWorkShifts.length;
+
+  // FLEX HOURS CUMULATIVE CALCULATIONS:
+  // Target Hours for full month (31 days * 9h = 279.0h for July)
+  const daysInCurrentMonth = getDaysInMonth(now);
+  const totalTargetHours = Number((daysInCurrentMonth * settings.targetWorkingHours).toFixed(1));
+  const totalActualMinutes = entries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+  const totalActualHours = Number((totalActualMinutes / 60).toFixed(1));
+
+  // Net Flex Balance = Actual Worked Hours - Required Hours
+  const netFlexBalanceHours = Number((totalActualHours - totalTargetHours).toFixed(1));
+  
+  // Net Overtime Hours = Only hours exceeding total target
+  const netOvertimeHours = Math.max(0, netFlexBalanceHours);
+  const netShortfallHours = Math.max(0, Number((-netFlexBalanceHours).toFixed(1)));
+
+  // Count days under 9h that are nullified/covered by flex hours
+  const targetMins = settings.targetWorkingHours * 60;
+  const shortDays = activeWorkShifts.filter(e => e.workedMinutes > 0 && e.workedMinutes < targetMins);
+  const coveredShortfallDaysCount = netFlexBalanceHours >= 0 ? shortDays.length : 0;
+
+  // Legacy sum of daily overtime minutes for backward compatibility
+  const overtimeMinutesTotal = Math.round(netOvertimeHours * 60);
+
+  // On-Time Punctuality % = (Shifts Arrived <= 12:30 PM Cutoff / Total Work Shifts) * 100
+  const onTimeShiftsCount = activeWorkShifts.filter(e => {
+    const isLate = e.status === 'late' || (e.loginTime && calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0);
+    return !isLate;
+  }).length;
+
+  const attendancePercentage = workingDaysTotal > 0 
+    ? Math.round((onTimeShiftsCount / workingDaysTotal) * 100)
+    : 100;
+
+  const missedDaysCount = entries.filter(e => e.status === 'absent').length;
+
+  // Streaks calculation
+  const { currentStreak, longestStreak } = calculateStreaks(records);
+
+  return {
+    todayLogin,
+    todayLogout,
+    todayWorkedMinutes,
+    expectedLogout,
+    currentStatus,
+    currentMonthHours,
+    avgLoginTime,
+    avgLogoutTime,
+    lateDaysCount,
+    overtimeMinutesTotal,
+    attendancePercentage,
+    currentStreak,
+    longestStreak,
+    workingDaysTotal,
+    missedDaysCount,
+    
+    // Cumulative Flex Hours stats
+    totalTargetHours,
+    totalActualHours,
+    netFlexBalanceHours,
+    netOvertimeHours,
+    netShortfallHours,
+    coveredShortfallDaysCount,
+  };
+}
+
+/**
+ * Calculates current and longest streaks of present attendance
+ */
+export function calculateStreaks(records: Record<string, AttendanceEntry>): { currentStreak: number; longestStreak: number } {
+  const dates = Object.keys(records).sort();
+  if (dates.length === 0) return { currentStreak: 0, longestStreak: 0 };
+
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+
+  let checkDate = new Date();
+  
+  const todayKey = format(checkDate, 'yyyy-MM-dd');
+  if (records[todayKey] && ['completed', 'working', 'present', 'late'].includes(records[todayKey].status)) {
+    currentStreak++;
+  }
+
+  for (let i = 1; i <= 365; i++) {
+    const prevDate = subDays(checkDate, i);
+    const key = format(prevDate, 'yyyy-MM-dd');
+    const entry = records[key];
+
+    const isWeekend = prevDate.getDay() === 0 || prevDate.getDay() === 6;
+    if (entry && ['completed', 'working', 'present', 'late'].includes(entry.status)) {
+      currentStreak++;
+    } else if (isWeekend && !entry) {
+      continue;
+    } else {
+      break;
+    }
+  }
+
+  let prevDateObj: Date | null = null;
+  dates.forEach(dateStr => {
+    const entry = records[dateStr];
+    const entryDate = parse(dateStr, 'yyyy-MM-dd', new Date());
+
+    if (entry && ['completed', 'working', 'present', 'late'].includes(entry.status)) {
+      if (!prevDateObj) {
+        tempStreak = 1;
+      } else {
+        const diff = differenceInCalendarDays(entryDate, prevDateObj);
+        if (diff === 1 || (diff <= 3 && [0, 6].includes(prevDateObj.getDay()))) {
+          tempStreak++;
+        } else {
+          tempStreak = 1;
+        }
+      }
+      prevDateObj = entryDate;
+      if (tempStreak > longestStreak) {
+        longestStreak = tempStreak;
+      }
+    } else {
+      tempStreak = 0;
+      prevDateObj = null;
+    }
+  });
+
+  return {
+    currentStreak: Math.max(currentStreak, tempStreak),
+    longestStreak: Math.max(longestStreak, currentStreak)
+  };
+}
