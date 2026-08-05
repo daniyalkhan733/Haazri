@@ -184,9 +184,10 @@ export function parseCSVImport(
 
     let status: AttendanceStatus = 'completed';
     const lowerRemarks = rawRemarks.toLowerCase();
+    const isSundayDay = new Date(`${fullDateStr}T00:00:00`).getDay() === 0;
 
     // Sunday Handling Rule: Sunday is a regular working day (11:00 AM - 08:00 PM = 9 hours)
-    if (lowerRemarks.includes('sunday') || lowerRemarks.includes('sun')) {
+    if (lowerRemarks.includes('sunday') || lowerRemarks.includes('sun') || isSundayDay) {
       if (!loginIso) loginIso = `${fullDateStr}T11:00:00`;
       if (!logoutIso) logoutIso = `${fullDateStr}T20:00:00`;
       status = 'completed';

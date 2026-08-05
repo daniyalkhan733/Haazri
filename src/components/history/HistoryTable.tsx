@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Modal } from '../common/Modal';
 import { AttendanceEntry, AttendanceStatus } from '../../types';
-import { format } from 'date-fns';
+import { format, parseISO, isValid } from 'date-fns';
 
 export const HistoryTable: React.FC = () => {
   const { records, updateRecord, deleteRecord, importRecords, settings } = useAttendance();
@@ -30,11 +30,19 @@ export const HistoryTable: React.FC = () => {
 
   // Selected date for edit modal
   const [editingDateStr, setEditingDateStr] = useState<string | null>(null);
+  const [originalDateStr, setOriginalDateStr] = useState<string | null>(null);
+  const [isNewEntry, setIsNewEntry] = useState(false);
   const [editLogin, setEditLogin] = useState('');
   const [editLogout, setEditLogout] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editWork, setEditWork] = useState('');
   const [editStatus, setEditStatus] = useState<AttendanceStatus>('completed');
+
+  const isSundayDate = (dateStr: string) => {
+    if (!dateStr) return false;
+    const d = parseISO(dateStr);
+    return isValid(d) && d.getDay() === 0;
+  };
 
   const allEntries = Object.values(records).sort((a, b) => b.date.localeCompare(a.date));
 
@@ -50,7 +58,9 @@ export const HistoryTable: React.FC = () => {
   });
 
   const handleOpenEdit = (entry: AttendanceEntry) => {
+    setOriginalDateStr(entry.date);
     setEditingDateStr(entry.date);
+    setIsNewEntry(false);
     setEditLogin(entry.loginTime ? format(new Date(entry.loginTime), "HH:mm") : '');
     setEditLogout(entry.logoutTime ? format(new Date(entry.logoutTime), "HH:mm") : '');
     setEditNotes(entry.notes || '');
@@ -60,12 +70,23 @@ export const HistoryTable: React.FC = () => {
 
   const handleCreateNewEntry = () => {
     const todayStr = format(new Date(), 'yyyy-MM-dd');
+    setOriginalDateStr(null);
     setEditingDateStr(todayStr);
-    setEditLogin('09:00');
-    setEditLogout('18:00');
+    setIsNewEntry(true);
+    const isSun = isSundayDate(todayStr);
+    setEditLogin(isSun ? '11:00' : '09:00');
+    setEditLogout(isSun ? '20:00' : '18:00');
     setEditNotes('');
     setEditWork('');
     setEditStatus('completed');
+  };
+
+  const handleDateChange = (newDateStr: string) => {
+    setEditingDateStr(newDateStr);
+    if (isSundayDate(newDateStr)) {
+      setEditLogin('11:00');
+      setEditLogout('20:00');
+    }
   };
 
   const handleSaveEdit = async () => {
@@ -76,6 +97,11 @@ export const HistoryTable: React.FC = () => {
     if (editLogin) loginIso = `${editingDateStr}T${editLogin}:00`;
     if (editLogout) logoutIso = `${editingDateStr}T${editLogout}:00`;
 
+    // If user modified date for an existing record, delete the old date key
+    if (originalDateStr && originalDateStr !== editingDateStr) {
+      await deleteRecord(originalDateStr);
+    }
+
     await updateRecord(editingDateStr, {
       loginTime: loginIso,
       logoutTime: logoutIso,
@@ -84,6 +110,7 @@ export const HistoryTable: React.FC = () => {
       todayWork: editWork
     });
     setEditingDateStr(null);
+    setOriginalDateStr(null);
   };
 
   const handleImportCsv = async () => {
@@ -272,10 +299,29 @@ export const HistoryTable: React.FC = () => {
       {editingDateStr && (
         <Modal
           isOpen={Boolean(editingDateStr)}
-          onClose={() => setEditingDateStr(null)}
-          title={`Edit Shift Entry - ${editingDateStr}`}
+          onClose={() => { setEditingDateStr(null); setOriginalDateStr(null); }}
+          title={isNewEntry ? `Create Manual Shift Entry` : `Edit Shift Entry - ${editingDateStr}`}
         >
           <div className="space-y-4">
+            
+            {/* Target Date Selector Field */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Date (Select date to log or backfill missing days)
+              </label>
+              <input
+                type="date"
+                value={editingDateStr}
+                onChange={(e) => handleDateChange(e.target.value)}
+                className="w-full px-3 py-2 text-sm rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              {isSundayDate(editingDateStr) && (
+                <p className="text-[11px] font-semibold text-amber-600 dark:text-amber-400 mt-1">
+                  🌅 Sunday detected: Default full-time shift 11:00 AM – 08:00 PM (9h) applied.
+                </p>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 Status
@@ -291,6 +337,25 @@ export const HistoryTable: React.FC = () => {
                 <option value="vacation">Vacation 🟣</option>
                 <option value="absent">Absent 🔴</option>
               </select>
+            </div>
+
+            {/* Quick Shift Presets */}
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Quick Shift:</span>
+              <button
+                type="button"
+                onClick={() => { setEditLogin('09:00'); setEditLogout('18:00'); }}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-brand-500/10 hover:text-brand-500 transition-colors"
+              >
+                ☀️ Standard (09:00 - 18:00)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditLogin('11:00'); setEditLogout('20:00'); }}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+              >
+                🌅 Sunday (11:00 - 20:00)
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

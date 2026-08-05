@@ -8,8 +8,6 @@ import { MoodType } from '../../types';
 export const ClockCard: React.FC = () => {
   const { todayEntry, liveTimerSeconds, settings, clockIn, clockOut } = useAttendance();
   const [loading, setLoading] = useState(false);
-  const [clockInNotes, setClockInNotes] = useState('');
-  const [showNotesInput, setShowNotesInput] = useState(false);
 
   const isClockedIn = Boolean(todayEntry && todayEntry.loginTime);
   const isClockedOut = Boolean(todayEntry && todayEntry.logoutTime && todayEntry.status === 'completed');
@@ -20,9 +18,7 @@ export const ClockCard: React.FC = () => {
   const handleClockIn = async () => {
     setLoading(true);
     try {
-      await clockIn(clockInNotes);
-      setShowNotesInput(false);
-      setClockInNotes('');
+      await clockIn();
     } finally {
       setLoading(false);
     }
@@ -113,43 +109,16 @@ export const ClockCard: React.FC = () => {
         <div className="flex flex-col items-center gap-3">
           
           {!isClockedIn ? (
-            <div className="flex flex-col items-center gap-3">
-              {showNotesInput && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="w-full max-w-xs"
-                >
-                  <input
-                    type="text"
-                    value={clockInNotes}
-                    onChange={(e) => setClockInNotes(e.target.value)}
-                    placeholder="Quick note for today (optional)..."
-                    className="w-full px-3 py-2 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </motion.div>
-              )}
-
-              <button
-                onClick={showNotesInput ? handleClockIn : () => setShowNotesInput(true)}
-                disabled={loading}
-                className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg shadow-xl shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-              >
-                <span className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-emerald-600">
-                  <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
-                </span>
-                <span>🟢 Clock In Now</span>
-              </button>
-
-              {!showNotesInput && (
-                <button
-                  onClick={() => setShowNotesInput(true)}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline"
-                >
-                  + Add quick note before clocking in
-                </button>
-              )}
-            </div>
+            <button
+              onClick={handleClockIn}
+              disabled={loading}
+              className="group relative flex items-center gap-3 px-8 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg shadow-xl shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+            >
+              <span className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-emerald-600">
+                <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
+              </span>
+              <span>🟢 Clock In Now</span>
+            </button>
           ) : isWorking ? (
             <button
               onClick={handleClockOut}

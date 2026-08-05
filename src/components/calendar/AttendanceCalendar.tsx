@@ -55,8 +55,9 @@ export const AttendanceCalendar: React.FC = () => {
       setEditMood(existing.mood || '😊');
       setEditStatus(existing.status);
     } else {
-      setEditLoginTime('');
-      setEditLogoutTime('');
+      const isSunday = dateObj.getDay() === 0;
+      setEditLoginTime(isSunday ? '11:00' : '09:00');
+      setEditLogoutTime(isSunday ? '20:00' : '18:00');
       setEditNotes('');
       setEditWork('');
       setEditMood('😊');
@@ -274,6 +275,25 @@ export const AttendanceCalendar: React.FC = () => {
                 <option value="vacation">Vacation / Leave 🟣</option>
                 <option value="absent">Absent / Missed 🔴</option>
               </select>
+            </div>
+
+            {/* Quick Shift Presets */}
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Quick Shift:</span>
+              <button
+                type="button"
+                onClick={() => { setEditLoginTime('09:00'); setEditLogoutTime('18:00'); }}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-brand-500/10 hover:text-brand-500 transition-colors"
+              >
+                ☀️ Standard (09:00 - 18:00)
+              </button>
+              <button
+                type="button"
+                onClick={() => { setEditLoginTime('11:00'); setEditLogoutTime('20:00'); }}
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+              >
+                🌅 Sunday (11:00 - 20:00)
+              </button>
             </div>
 
             {/* Time inputs */}
