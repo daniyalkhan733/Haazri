@@ -90,7 +90,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
       </aside>
 
       {/* Mobile Bottom Navigation Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 dark:bg-dark-card/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-dark-border/60 px-2 py-2 flex items-center justify-around">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-dark-card/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-dark-border/60 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))] flex items-center justify-around shadow-lg">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentTab === item.id;
@@ -99,14 +99,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
             <button
               key={item.id}
               onClick={() => onTabChange(item.id)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-xl text-xs transition-colors ${
+              className={`flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl text-xs transition-all active:scale-95 ${
                 isActive
-                  ? 'text-brand-500 font-bold'
+                  ? 'text-brand-500 font-bold bg-brand-500/10 dark:bg-brand-500/15'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] leading-none">{item.label.split(' ')[0]}</span>
+              <Icon className="w-5 h-5 shrink-0" />
+              <span className="text-[10px] font-semibold leading-none">{item.label.split(' ')[0]}</span>
             </button>
           );
         })}
