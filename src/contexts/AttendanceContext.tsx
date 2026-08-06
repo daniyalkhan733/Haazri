@@ -13,6 +13,7 @@ import { calculateAttendanceStats } from '../utils/analyticsUtils';
 import { getTodayDateString } from '../utils/timeUtils';
 import { checkDailyReminders, requestNotificationPermission } from '../utils/notificationUtils';
 import confetti from 'canvas-confetti';
+import { addMonths, subMonths } from 'date-fns';
 
 const SETTINGS_STORAGE_KEY = 'attendance_user_settings';
 
@@ -40,6 +41,11 @@ interface AttendanceContextType {
   todayEntry: AttendanceEntry | null;
   settings: UserSettings;
   liveTimerSeconds: number;
+  selectedMonthDate: Date;
+  setSelectedMonthDate: (date: Date) => void;
+  goToPrevMonth: () => void;
+  goToNextMonth: () => void;
+  goToCurrentMonth: () => void;
   toasts: ToastMessage[];
   addToast: (toast: Omit<ToastMessage, 'id'>) => void;
   removeToast: (id: string) => void;
@@ -58,6 +64,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const [records, setRecords] = useState<Record<string, AttendanceEntry>>({});
   const [loading, setLoading] = useState<boolean>(true);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [selectedMonthDate, setSelectedMonthDate] = useState<Date>(new Date());
 
   // User settings state
   const [settings, setSettingsState] = useState<UserSettings>(() => {
@@ -166,8 +173,12 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return () => clearInterval(interval);
   }, [todayEntry, settings]);
 
+  const goToPrevMonth = () => setSelectedMonthDate(prev => subMonths(prev, 1));
+  const goToNextMonth = () => setSelectedMonthDate(prev => addMonths(prev, 1));
+  const goToCurrentMonth = () => setSelectedMonthDate(new Date());
+
   // Calculated Stats
-  const stats = calculateAttendanceStats(records, settings);
+  const stats = calculateAttendanceStats(records, settings, selectedMonthDate);
 
   // Clock In Action
   const clockIn = async (notes: string = ''): Promise<boolean> => {
@@ -273,6 +284,11 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         todayEntry,
         settings,
         liveTimerSeconds,
+        selectedMonthDate,
+        setSelectedMonthDate,
+        goToPrevMonth,
+        goToNextMonth,
+        goToCurrentMonth,
         toasts,
         addToast,
         removeToast,

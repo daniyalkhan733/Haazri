@@ -71,4 +71,9 @@ export interface AttendanceStats {
   netOvertimeHours: number;
   netShortfallHours: number;
   coveredShortfallDaysCount: number;
+
+  // Selected Month Metadata
+  selectedMonthLabel: string;
+  monthProgressPercent: number;
+  isCurrentMonth: boolean;
 }

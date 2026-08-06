@@ -4,16 +4,19 @@ import { calculateLateMinutes } from './timeUtils';
 
 export function calculateAttendanceStats(
   records: Record<string, AttendanceEntry>,
-  settings: UserSettings
+  settings: UserSettings,
+  selectedMonthDate: Date = new Date()
 ): AttendanceStats {
   const todayStr = format(new Date(), 'yyyy-MM-dd');
   const todayEntry = records[todayStr] || null;
 
   const entries = Object.values(records).filter(e => e && e.date);
-  const now = new Date();
+  const targetDate = selectedMonthDate || new Date();
+  
+  // Month-scoped entries for selected month
   const currentMonthEntries = entries.filter(e => {
     const entryDate = parseISO(e.date);
-    return isSameMonth(entryDate, now);
+    return isSameMonth(entryDate, targetDate);
   });
 
   // Today stats
@@ -33,12 +36,12 @@ export function calculateAttendanceStats(
     currentStatus = todayEntry.status;
   }
 
-  // Current Month Worked Hours
+  // Current Selected Month Worked Hours
   const currentMonthMinutes = currentMonthEntries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
   const currentMonthHours = Number((currentMonthMinutes / 60).toFixed(1));
 
-  // Valid login entries for averages
-  const validLogins = entries.filter(e => e.loginTime);
+  // Valid login entries for month averages
+  const validLogins = currentMonthEntries.filter(e => e.loginTime);
   let avgLoginTime = '--:--';
   if (validLogins.length > 0) {
     let totalMinutesFromMidnight = 0;
@@ -54,8 +57,8 @@ export function calculateAttendanceStats(
     avgLoginTime = `${displayH.toString().padStart(2, '0')}:${avgM.toString().padStart(2, '0')} ${period}`;
   }
 
-  // Valid logout entries
-  const validLogouts = entries.filter(e => e.logoutTime);
+  // Valid logout entries for month averages
+  const validLogouts = currentMonthEntries.filter(e => e.logoutTime);
   let avgLogoutTime = '--:--';
   if (validLogouts.length > 0) {
     let totalMinutesFromMidnight = 0;
@@ -71,8 +74,8 @@ export function calculateAttendanceStats(
     avgLogoutTime = `${displayH.toString().padStart(2, '0')}:${avgM.toString().padStart(2, '0')} ${period}`;
   }
 
-  // Late days count (Rule: ONLY logins after 12:30 PM cutoff are Late)
-  const lateDaysCount = entries.filter(e => {
+  // Late days count for the SELECTED MONTH ONLY (Rule: ONLY logins after cutoff are Late)
+  const lateDaysCount = currentMonthEntries.filter(e => {
     if (e.status === 'vacation' || e.status === 'absent') return false;
     if (e.loginTime) {
       return calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0;
@@ -80,33 +83,31 @@ export function calculateAttendanceStats(
     return false;
   }).length;
 
-  // Work Shifts count (including Sundays as regular work days)
-  const activeWorkShifts = entries.filter(e => e.status !== 'vacation' && e.status !== 'absent');
+  // Work Shifts count for selected month (including Sundays as regular work days)
+  const activeWorkShifts = currentMonthEntries.filter(e => e.status !== 'vacation' && e.status !== 'absent');
   const workingDaysTotal = activeWorkShifts.length;
 
-  // FLEX HOURS CUMULATIVE CALCULATIONS:
-  // Target Hours for full month (31 days * 9h = 279.0h for July)
-  const daysInCurrentMonth = getDaysInMonth(now);
+  // MONTHLY TARGET & FLEX CALCULATIONS
+  const daysInCurrentMonth = getDaysInMonth(targetDate);
   const totalTargetHours = Number((daysInCurrentMonth * settings.targetWorkingHours).toFixed(1));
-  const totalActualMinutes = entries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
-  const totalActualHours = Number((totalActualMinutes / 60).toFixed(1));
+  const totalActualHours = currentMonthHours; // Month actual hours
 
-  // Net Flex Balance = Actual Worked Hours - Required Hours
-  const netFlexBalanceHours = Number((totalActualHours - totalTargetHours).toFixed(1));
+  // Net Flex Balance for Month = Month Worked Hours - Month Target Hours
+  const netFlexBalanceHours = Number((currentMonthHours - totalTargetHours).toFixed(1));
   
-  // Net Overtime Hours = Only hours exceeding total target
+  // Net Overtime & Shortfall Hours for Month
   const netOvertimeHours = Math.max(0, netFlexBalanceHours);
   const netShortfallHours = Math.max(0, Number((-netFlexBalanceHours).toFixed(1)));
 
-  // Count days under 9h that are nullified/covered by flex hours
+  // Count days under target hours in selected month covered by flex hours
   const targetMins = settings.targetWorkingHours * 60;
   const shortDays = activeWorkShifts.filter(e => e.workedMinutes > 0 && e.workedMinutes < targetMins);
   const coveredShortfallDaysCount = netFlexBalanceHours >= 0 ? shortDays.length : 0;
 
-  // Legacy sum of daily overtime minutes for backward compatibility
+  // Total Overtime Minutes in month
   const overtimeMinutesTotal = Math.round(netOvertimeHours * 60);
 
-  // On-Time Punctuality % = (Shifts Arrived <= 12:30 PM Cutoff / Total Work Shifts) * 100
+  // On-Time Punctuality % for Selected Month
   const onTimeShiftsCount = activeWorkShifts.filter(e => {
     const isLate = e.status === 'late' || (e.loginTime && calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0);
     return !isLate;
@@ -116,10 +117,16 @@ export function calculateAttendanceStats(
     ? Math.round((onTimeShiftsCount / workingDaysTotal) * 100)
     : 100;
 
-  const missedDaysCount = entries.filter(e => e.status === 'absent').length;
+  const missedDaysCount = currentMonthEntries.filter(e => e.status === 'absent').length;
 
-  // Streaks calculation
+  // Streaks calculation (across overall history)
   const { currentStreak, longestStreak } = calculateStreaks(records);
+
+  const selectedMonthLabel = format(targetDate, 'MMMM yyyy');
+  const monthProgressPercent = totalTargetHours > 0 
+    ? Math.min(100, Math.round((currentMonthHours / totalTargetHours) * 100))
+    : 0;
+  const isCurrentMonth = isSameMonth(targetDate, new Date());
 
   return {
     todayLogin,
@@ -138,13 +145,18 @@ export function calculateAttendanceStats(
     workingDaysTotal,
     missedDaysCount,
     
-    // Cumulative Flex Hours stats
+    // Monthly Flex Hours stats
     totalTargetHours,
     totalActualHours,
     netFlexBalanceHours,
     netOvertimeHours,
     netShortfallHours,
     coveredShortfallDaysCount,
+
+    // Selected Month Metadata
+    selectedMonthLabel,
+    monthProgressPercent,
+    isCurrentMonth,
   };
 }
 
