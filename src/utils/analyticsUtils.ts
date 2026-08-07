@@ -87,6 +87,12 @@ export function calculateAttendanceStats(
   const activeWorkShifts = currentMonthEntries.filter(e => e.status !== 'vacation' && e.status !== 'absent');
   const workingDaysTotal = activeWorkShifts.length;
 
+  // SHIFT PACE CALCULATIONS (Based on number of recorded work days / shifts)
+  const expectedHoursForRecordedShifts = Number((workingDaysTotal * settings.targetWorkingHours).toFixed(1));
+  const shiftPaceBalanceHours = Number((currentMonthHours - expectedHoursForRecordedShifts).toFixed(1));
+  const shiftPaceOvertimeHours = Math.max(0, shiftPaceBalanceHours);
+  const shiftPaceShortfallHours = Math.max(0, Number((-shiftPaceBalanceHours).toFixed(1)));
+
   // MONTHLY TARGET & FLEX CALCULATIONS
   const daysInCurrentMonth = getDaysInMonth(targetDate);
   const totalTargetHours = Number((daysInCurrentMonth * settings.targetWorkingHours).toFixed(1));
@@ -152,6 +158,12 @@ export function calculateAttendanceStats(
     netOvertimeHours,
     netShortfallHours,
     coveredShortfallDaysCount,
+
+    // Shift-Based Pace Balance
+    expectedHoursForRecordedShifts,
+    shiftPaceBalanceHours,
+    shiftPaceOvertimeHours,
+    shiftPaceShortfallHours,
 
     // Selected Month Metadata
     selectedMonthLabel,

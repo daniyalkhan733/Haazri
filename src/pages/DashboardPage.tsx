@@ -103,7 +103,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
 
       {/* Monthly Hours Tracker & Lag Meter Card */}
       <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
-        stats.netFlexBalanceHours >= 0 
+        stats.shiftPaceBalanceHours >= 0 
           ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border-emerald-500/20' 
           : 'bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/5 border-amber-500/20'
       }`}>
@@ -111,16 +111,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
           <div className="space-y-1">
             <div className="flex items-start sm:items-center gap-2">
               <span className={`p-2 rounded-xl text-white shrink-0 mt-0.5 sm:mt-0 ${
-                stats.netFlexBalanceHours >= 0 ? 'bg-emerald-500' : 'bg-amber-500'
+                stats.shiftPaceBalanceHours >= 0 ? 'bg-emerald-500' : 'bg-amber-500'
               }`}>
-                {stats.netFlexBalanceHours >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
+                {stats.shiftPaceBalanceHours >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
               </span>
               <div>
                 <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Monthly Hours Required vs Worked Tracker
+                  Monthly Workday Pace & Hours Tracker
                 </h4>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                  Target: {getDaysInMonthLabel(stats.selectedMonthLabel)} days × {settings.targetWorkingHours}h = {stats.totalTargetHours}h required for {stats.selectedMonthLabel}
+                  Shift Pace: {stats.currentMonthHours}h worked across {stats.workingDaysTotal} shifts (Target: {stats.expectedHoursForRecordedShifts}h expected)
                 </p>
               </div>
             </div>
@@ -129,9 +129,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
           {/* Quick Metrics & Hours Lagged Display */}
           <div className="grid grid-cols-3 sm:flex items-center gap-2 sm:gap-6 bg-white/70 dark:bg-dark-card/80 p-3 sm:p-3.5 rounded-xl border border-slate-200/50 dark:border-dark-border/50 shrink-0 text-center sm:text-left">
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Required</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Shift Target</p>
               <p className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white">
-                {stats.totalTargetHours}h
+                {stats.expectedHoursForRecordedShifts}h
               </p>
             </div>
             <div className="hidden sm:block h-7 w-[1px] bg-slate-200 dark:bg-slate-700" />
@@ -143,13 +143,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
             </div>
             <div className="hidden sm:block h-7 w-[1px] bg-slate-200 dark:bg-slate-700" />
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Balance</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pace Balance</p>
               <p className={`text-xs sm:text-sm font-black font-mono ${
-                stats.netFlexBalanceHours >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                stats.shiftPaceBalanceHours >= 0 ? 'text-emerald-500' : 'text-rose-500'
               }`}>
-                {stats.netFlexBalanceHours >= 0 
-                  ? `+${stats.netOvertimeHours}h` 
-                  : `-${stats.netShortfallHours}h`}
+                {stats.shiftPaceBalanceHours >= 0 
+                  ? `+${stats.shiftPaceOvertimeHours}h` 
+                  : `-${stats.shiftPaceShortfallHours}h`}
               </p>
             </div>
           </div>
@@ -159,16 +159,16 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
         <div className="mt-4 space-y-1.5">
           <div className="flex items-center justify-between text-xs font-bold">
             <span className="text-slate-600 dark:text-slate-300">
-              Monthly Progress
+              Monthly Goal Progress ({stats.workingDaysTotal} shifts recorded)
             </span>
-            <span className={stats.netFlexBalanceHours >= 0 ? 'text-emerald-500' : 'text-amber-500'}>
-              {stats.monthProgressPercent}% ({stats.currentMonthHours}h / {stats.totalTargetHours}h)
+            <span className={stats.shiftPaceBalanceHours >= 0 ? 'text-emerald-500' : 'text-amber-500'}>
+              {stats.monthProgressPercent}% ({stats.currentMonthHours}h / {stats.totalTargetHours}h total month goal)
             </span>
           </div>
           <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
             <div 
               className={`h-full rounded-full transition-all duration-500 ${
-                stats.netFlexBalanceHours >= 0 
+                stats.shiftPaceBalanceHours >= 0 
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-400' 
                   : 'bg-gradient-to-r from-amber-500 to-rose-500'
               }`}
@@ -181,13 +181,17 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
       {/* Month-Scoped Streamlined Key Metric Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         
-        {/* 1. Today's Login Time */}
+        {/* 1. Workday Hours Lag / Surplus (Replaced Today's Login Time) */}
         <MetricCard
-          title="Today's Login Time"
-          value={formatTimeDisplay(stats.todayLogin)}
-          subtitle={stats.todayLogin ? 'Recorded arrival' : 'Not clocked in yet'}
-          icon={LogIn}
-          colorScheme="brand"
+          title="Workday Hours Lag / Surplus"
+          value={stats.shiftPaceBalanceHours >= 0 ? `+${stats.shiftPaceOvertimeHours}h Extra` : `-${stats.shiftPaceShortfallHours}h Short`}
+          subtitle={
+            stats.shiftPaceBalanceHours >= 0 
+              ? `Ahead of ${stats.expectedHoursForRecordedShifts}h target (${stats.workingDaysTotal} shifts recorded)` 
+              : `Lagged behind ${stats.expectedHoursForRecordedShifts}h target (${stats.workingDaysTotal} shifts recorded)`
+          }
+          icon={Scale}
+          colorScheme={stats.shiftPaceBalanceHours >= 0 ? 'emerald' : 'rose'}
         />
 
         {/* 2. Worked Hours Today */}
@@ -217,11 +221,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
           colorScheme="amber"
         />
 
-        {/* 5. Month Net Hours Balance */}
+        {/* 5. Full Month Goal Lag / Lead */}
         <MetricCard
-          title="Month Hours Lagged / Surplus"
+          title="Total Month Goal Lag"
           value={stats.netFlexBalanceHours >= 0 ? `+${stats.netOvertimeHours}h Extra` : `-${stats.netShortfallHours}h Short`}
-          subtitle={stats.netFlexBalanceHours >= 0 ? 'Exceeding target required hours!' : `Lagged behind ${stats.totalTargetHours}h target`}
+          subtitle={stats.netFlexBalanceHours >= 0 ? 'Exceeding total required hours!' : `Full month goal: ${stats.totalTargetHours}h (${stats.currentMonthHours}h worked so far)`}
           icon={Zap}
           colorScheme={stats.netFlexBalanceHours >= 0 ? 'emerald' : 'rose'}
         />

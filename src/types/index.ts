@@ -64,13 +64,19 @@ export interface AttendanceStats {
   workingDaysTotal: number;
   missedDaysCount: number;
   
-  // Flex-Hours & Cumulative Balance
+  // Selected Month Flex-Hours & Cumulative Balance
   totalTargetHours: number;
   totalActualHours: number;
   netFlexBalanceHours: number;
   netOvertimeHours: number;
   netShortfallHours: number;
   coveredShortfallDaysCount: number;
+
+  // Shift-Based Pace Balance (Based on recorded office data entry shifts)
+  expectedHoursForRecordedShifts: number;
+  shiftPaceBalanceHours: number;
+  shiftPaceOvertimeHours: number;
+  shiftPaceShortfallHours: number;
 
   // Selected Month Metadata
   selectedMonthLabel: string;
