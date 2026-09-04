@@ -38,18 +38,18 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Welcome to Attendance Tracker" maxWidth="max-w-md">
+    <Modal isOpen={isOpen} onClose={onClose} title="Welcome to Haazri" maxWidth="max-w-md">
       <div className="space-y-5 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-500 to-indigo-600 mx-auto flex items-center justify-center shadow-xl shadow-brand-500/30 text-white">
-          <Sparkles className="w-7 h-7 animate-pulse" />
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand-500 via-brand-600 to-indigo-600 mx-auto flex items-center justify-center shadow-xl shadow-brand-500/30 text-white font-black text-2xl tracking-wider">
+          H
         </div>
 
         <div>
           <h4 className="text-xl font-bold text-slate-900 dark:text-white">
-            Sign In to Sync & Track
+            Sign In to Haazri
           </h4>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Choose your preferred sign-in method to store your daily work hours in Firebase Realtime Database.
+            Choose your preferred sign-in method to sync your daily work hours and attendance in real time.
           </p>
         </div>
 

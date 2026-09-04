@@ -103,42 +103,46 @@ export const AttendanceCalendar: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* Calendar Top Bar */}
-      <div className="glass-panel p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-brand-500/10 text-brand-500">
+      {/* Samsung One UI Calendar Top Bar */}
+      <div className="oneui-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center shrink-0 shadow-sm">
             <CalendarIcon className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-oneui-text dark:text-white tracking-tight">
               {format(currentMonth, 'MMMM yyyy')}
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Click on any day cell to view or log shift details
+            <p className="text-xs text-oneui-subtext dark:text-dark-subtext font-medium">
+              Tap any date to inspect, log shifts, or update remarks
             </p>
           </div>
         </div>
 
-        {/* Month Navigation */}
+        {/* Month Navigation Pill Group */}
         <div className="flex items-center gap-2">
           <button
             onClick={handleTodayMonth}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+            className="px-4 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 text-xs font-bold hover:bg-brand-500/20 transition-all active:scale-95"
           >
             Today
           </button>
-          <button
-            onClick={handlePrevMonth}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleNextMonth}
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center bg-oneui-subcard dark:bg-dark-subcard p-1 rounded-full border border-oneui-border dark:border-dark-border shadow-sm">
+            <button
+              onClick={handlePrevMonth}
+              className="p-2 rounded-full text-oneui-text dark:text-dark-text hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all active:scale-90"
+              title="Previous Month"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleNextMonth}
+              className="p-2 rounded-full text-oneui-text dark:text-dark-text hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all active:scale-90"
+              title="Next Month"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -162,7 +166,7 @@ export const AttendanceCalendar: React.FC = () => {
       </div>
 
       {/* Calendar Days Grid */}
-      <div className="glass-card overflow-hidden p-4">
+      <div className="oneui-card overflow-hidden p-4 sm:p-5">
         {/* Days of Week Header */}
         <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
           <div>Mon</div>

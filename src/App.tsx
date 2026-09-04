@@ -13,6 +13,8 @@ import { CalendarPage } from './pages/CalendarPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { LoadingScreen } from './components/common/LoadingScreen';
+import { AnimatePresence } from 'framer-motion';
 
 function AppContent() {
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
@@ -21,6 +23,7 @@ function AppContent() {
 
   const { toggleTheme } = useTheme();
   const { clockIn, clockOut, todayEntry } = useAttendance();
+  const { loading: authLoading, currentUser } = useAuth();
 
   // Global Keyboard Shortcuts Listener
   useEffect(() => {
@@ -78,6 +81,15 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-dark-bg text-slate-900 dark:text-dark-text font-sans antialiased transition-colors duration-200 flex flex-col">
+      {/* Fullscreen Auto-login / Auth Loading Screen */}
+      <AnimatePresence>
+        {authLoading && (
+          <LoadingScreen
+            message="Authenticating your workspace..."
+            subMessage="Connecting securely and preparing your dashboard..."
+          />
+        )}
+      </AnimatePresence>
       
       {/* Header */}
       <Header

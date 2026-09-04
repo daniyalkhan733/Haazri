@@ -22,18 +22,18 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Keyboard Shortcuts" maxWidth="max-w-md">
       <div className="space-y-3">
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 text-xs">
+        <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 text-xs font-semibold">
           <Command className="w-4 h-4 shrink-0" />
-          <span>Press any of these shortcuts anywhere in the application to trigger quick actions.</span>
+          <span>Press any shortcut key anywhere on the dashboard for instant navigation.</span>
         </div>
 
-        <div className="divide-y divide-slate-100 dark:divide-dark-border/40">
+        <div className="divide-y divide-oneui-border/60 dark:divide-dark-border/60">
           {shortcuts.map((sc) => (
-            <div key={sc.key} className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+            <div key={sc.key} className="flex items-center justify-between py-3">
+              <span className="text-sm text-oneui-text dark:text-white font-medium">
                 {sc.description}
               </span>
-              <kbd className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold text-slate-800 dark:text-slate-200 shadow-sm">
+              <kbd className="px-3 py-1 rounded-xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-xs font-mono font-black text-brand-600 dark:text-brand-400 shadow-sm">
                 {sc.key}
               </kbd>
             </div>

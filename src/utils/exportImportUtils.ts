@@ -47,7 +47,7 @@ export async function exportToPDF(records: Record<string, AttendanceEntry>, user
     // Header Title
     doc.setFontSize(20);
     doc.setTextColor(12, 163, 235); // Brand color
-    doc.text('Personal Attendance Tracker Report', 14, 20);
+    doc.text('Haazri Attendance & Work Hours Report', 14, 20);
 
     doc.setFontSize(10);
     doc.setTextColor(100, 100, 100);
@@ -73,7 +73,7 @@ export async function exportToPDF(records: Record<string, AttendanceEntry>, user
       styles: { fontSize: 8 }
     });
 
-    doc.save(`Attendance_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`Haazri_Attendance_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   } catch (err) {
     console.error('Failed to generate PDF:', err);
     alert('Failed to generate PDF. Falling back to CSV export.');

@@ -16,11 +16,23 @@ export const ToastContainer: React.FC = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.9 }}
             transition={{ duration: 0.25 }}
-            className="pointer-events-auto flex items-start gap-3 p-4 rounded-2xl bg-white/90 dark:bg-dark-card/95 backdrop-blur-xl border border-slate-200/80 dark:border-dark-border shadow-2xl shadow-black/10 dark:shadow-black/40 text-slate-800 dark:text-slate-100"
+            className="pointer-events-auto flex items-start gap-3.5 p-4 rounded-3xl bg-oneui-card/95 dark:bg-dark-card/95 backdrop-blur-xl border border-oneui-border dark:border-dark-border shadow-2xl text-oneui-text dark:text-dark-text"
           >
-            {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />}
-            {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-500 shrink-0 mt-0.5" />}
-            {toast.type === 'info' && <Info className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />}
+            {toast.type === 'success' && (
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center shrink-0 mt-0.5">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+            )}
+            {toast.type === 'error' && (
+              <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertCircle className="w-4 h-4" />
+              </div>
+            )}
+            {toast.type === 'info' && (
+              <div className="w-8 h-8 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center shrink-0 mt-0.5">
+                <Info className="w-4 h-4" />
+              </div>
+            )}
 
             <div className="flex-1 min-w-0">
               <h4 className="text-sm font-semibold leading-tight text-slate-900 dark:text-white">

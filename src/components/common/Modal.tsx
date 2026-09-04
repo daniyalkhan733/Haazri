@@ -50,15 +50,15 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className={`relative w-full ${maxWidth} glass-modal overflow-hidden p-6 z-10 my-8`}
+            className={`relative w-full ${maxWidth} bg-oneui-card dark:bg-dark-card border border-oneui-border dark:border-dark-border rounded-4xl shadow-2xl overflow-hidden p-6 sm:p-7 z-10 my-8`}
           >
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200/60 dark:border-dark-border/60">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">
+            <div className="flex items-center justify-between pb-4 border-b border-oneui-border/60 dark:border-dark-border/60">
+              <h3 className="text-lg font-extrabold text-oneui-text dark:text-white tracking-tight">
                 {title}
               </h3>
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-2 rounded-full text-oneui-subtext dark:text-dark-subtext hover:text-oneui-text dark:hover:text-white hover:bg-oneui-subcard dark:hover:bg-dark-subcard transition-all active:scale-90"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />

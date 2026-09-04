@@ -98,45 +98,45 @@ export const AnalyticsCharts: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* Top Header & Filters */}
-      <div className="glass-panel p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-500">
+      {/* Samsung One UI Top Header & Range Switcher */}
+      <div className="oneui-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-500 flex items-center justify-center shrink-0 shadow-sm">
             <BarChart3 className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Reports & Performance Analytics
+            <h2 className="text-xl sm:text-2xl font-extrabold text-oneui-text dark:text-white tracking-tight">
+              Reports & Performance
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Interactive visualizations of hours, overtime, and punctuality trends
+            <p className="text-xs text-oneui-subtext dark:text-dark-subtext font-medium">
+              Interactive visualizations of worked hours, overtime, and punctuality
             </p>
           </div>
         </div>
 
         {/* Range Switcher & Export Buttons */}
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
+          <div className="flex items-center bg-oneui-subcard dark:bg-dark-subcard p-1 rounded-full border border-oneui-border dark:border-dark-border shadow-sm text-xs font-bold">
             <button
               onClick={() => setTimeRange('7days')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                timeRange === '7days' ? 'bg-white dark:bg-dark-card text-brand-500 shadow-sm' : 'text-slate-500'
+              className={`px-3.5 py-1.5 rounded-full transition-all active:scale-95 ${
+                timeRange === '7days' ? 'bg-brand-500 text-white shadow-sm' : 'text-oneui-subtext dark:text-dark-subtext hover:text-oneui-text'
               }`}
             >
               7 Days
             </button>
             <button
               onClick={() => setTimeRange('30days')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                timeRange === '30days' ? 'bg-white dark:bg-dark-card text-brand-500 shadow-sm' : 'text-slate-500'
+              className={`px-3.5 py-1.5 rounded-full transition-all active:scale-95 ${
+                timeRange === '30days' ? 'bg-brand-500 text-white shadow-sm' : 'text-oneui-subtext dark:text-dark-subtext hover:text-oneui-text'
               }`}
             >
               30 Days
             </button>
             <button
               onClick={() => setTimeRange('year')}
-              className={`px-3 py-1.5 rounded-lg transition-colors ${
-                timeRange === 'year' ? 'bg-white dark:bg-dark-card text-brand-500 shadow-sm' : 'text-slate-500'
+              className={`px-3.5 py-1.5 rounded-full transition-all active:scale-95 ${
+                timeRange === 'year' ? 'bg-brand-500 text-white shadow-sm' : 'text-oneui-subtext dark:text-dark-subtext hover:text-oneui-text'
               }`}
             >
               Year
@@ -145,7 +145,7 @@ export const AnalyticsCharts: React.FC = () => {
 
           <button
             onClick={() => exportToCSV(records)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-all active:scale-95"
           >
             <FileSpreadsheet className="w-4 h-4" />
             <span>CSV</span>
@@ -153,7 +153,7 @@ export const AnalyticsCharts: React.FC = () => {
 
           <button
             onClick={() => exportToPDF(records, currentUser?.name)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 text-xs font-bold transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-xs font-bold transition-all active:scale-95"
           >
             <FileText className="w-4 h-4" />
             <span>PDF Report</span>
@@ -165,11 +165,11 @@ export const AnalyticsCharts: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Chart 1: Worked Hours Trend */}
-        <div className="glass-card p-5 space-y-3">
+        <div className="oneui-card p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+            <h3 className="font-extrabold text-oneui-text dark:text-white text-base flex items-center gap-2">
               <Clock className="w-4 h-4 text-brand-500" />
-              Worked Hours Overview
+              Worked Hours Trend
             </h3>
             <span className="text-xs font-bold text-brand-500 font-mono">
               Target: 9.0h / day
@@ -181,26 +181,26 @@ export const AnalyticsCharts: React.FC = () => {
               <AreaChart data={finalDailyData as any}>
                 <defs>
                   <linearGradient id="colorHours" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ca3eb" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#0ca3eb" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#1E60F2" stopOpacity={0.4}/>
+                    <stop offset="95%" stopColor="#1E60F2" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                 <XAxis dataKey={timeRange === 'year' ? 'month' : 'displayDate'} stroke="#94a3b8" fontSize={11} />
                 <YAxis stroke="#94a3b8" fontSize={11} unit="h" />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111622', borderColor: '#1D2636', borderRadius: '12px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: '#161922', borderColor: '#252B3B', borderRadius: '16px', color: '#fff' }} 
                 />
-                <Area type="monotone" dataKey="workedHours" stroke="#0ca3eb" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
+                <Area type="monotone" dataKey="workedHours" stroke="#1E60F2" strokeWidth={3} fillOpacity={1} fill="url(#colorHours)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Chart 2: Overtime Hours Bar Chart */}
-        <div className="glass-card p-5 space-y-3">
+        <div className="oneui-card p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+            <h3 className="font-extrabold text-oneui-text dark:text-white text-base flex items-center gap-2">
               <Zap className="w-4 h-4 text-emerald-500" />
               Overtime Hours Logged
             </h3>
@@ -225,9 +225,9 @@ export const AnalyticsCharts: React.FC = () => {
         </div>
 
         {/* Chart 3: Late Arrival Minutes */}
-        <div className="glass-card p-5 space-y-3">
+        <div className="oneui-card p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+            <h3 className="font-extrabold text-oneui-text dark:text-white text-base flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-amber-500" />
               Late Arrival Minutes
             </h3>
@@ -240,10 +240,10 @@ export const AnalyticsCharts: React.FC = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                <XAxis dataKey="displayDate" stroke="#94a3b8" fontSize={11} />
+                <XAxis dataKey={timeRange === 'year' ? 'month' : 'displayDate'} stroke="#94a3b8" fontSize={11} />
                 <YAxis stroke="#94a3b8" fontSize={11} unit="m" />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#111622', borderColor: '#1D2636', borderRadius: '12px', color: '#fff' }} 
+                  contentStyle={{ backgroundColor: '#161922', borderColor: '#252B3B', borderRadius: '16px', color: '#fff' }} 
                 />
                 <Bar dataKey="lateMinutes" fill="#f59e0b" radius={[6, 6, 0, 0]} />
               </BarChart>
@@ -252,9 +252,9 @@ export const AnalyticsCharts: React.FC = () => {
         </div>
 
         {/* Chart 4: Attendance Status Distribution Pie */}
-        <div className="glass-card p-5 space-y-3">
+        <div className="oneui-card p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
+            <h3 className="font-extrabold text-oneui-text dark:text-white text-base flex items-center gap-2">
               <PieChartIcon className="w-4 h-4 text-purple-500" />
               Shift Distribution
             </h3>

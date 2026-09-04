@@ -1,4 +1,4 @@
--- SQL Schema for Personal Attendance Tracker
+-- SQL Schema for Haazri - Smart Attendance Engine
 -- Paste this script into your Supabase SQL Editor (https://supabase.com) to initialize tables.
 
 -- 1. Create the Profile Table

@@ -128,22 +128,27 @@ export const HistoryTable: React.FC = () => {
   return (
     <div className="space-y-6">
       
-      {/* Top Header & Filters */}
-      <div className="glass-panel p-5 space-y-4">
+      {/* Samsung One UI Top Header & Filters */}
+      <div className="oneui-card p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-              Attendance Records History
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Manage shift logs, manual corrections, CSV imports, and exports
-            </p>
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0 shadow-sm">
+              <CalendarIcon className="w-6 h-6" />
+            </div>
+            <div>
+              <h2 className="text-xl sm:text-2xl font-extrabold text-oneui-text dark:text-white tracking-tight">
+                Attendance History
+              </h2>
+              <p className="text-xs text-oneui-subtext dark:text-dark-subtext font-medium">
+                Manage shift logs, manual corrections, CSV imports, and reports
+              </p>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleCreateNewEntry}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-brand-500 hover:bg-brand-600 active:scale-95 text-white text-xs font-bold shadow-md shadow-brand-500/20 transition-all"
             >
               <Plus className="w-4 h-4" />
               <span>Log Manual Shift</span>
@@ -151,7 +156,7 @@ export const HistoryTable: React.FC = () => {
 
             <button
               onClick={() => setIsImportModalOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 text-xs font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 text-xs font-bold transition-all active:scale-95"
             >
               <Upload className="w-4 h-4" />
               <span>Import CSV</span>
@@ -159,41 +164,41 @@ export const HistoryTable: React.FC = () => {
 
             <button
               onClick={() => exportToCSV(records)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-all active:scale-95"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              <span>Export CSV</span>
+              <span>CSV</span>
             </button>
 
             <button
               onClick={() => exportToPDF(records, currentUser?.name)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 text-xs font-bold transition-colors"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-xs font-bold transition-all active:scale-95"
             >
               <FileText className="w-4 h-4" />
-              <span>Export PDF</span>
+              <span>PDF Report</span>
             </button>
           </div>
         </div>
 
         {/* Filter Controls Row */}
-        <div className="flex flex-col sm:flex-row items-center gap-3 pt-2 border-t border-slate-100 dark:border-dark-border/40">
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-3 border-t border-oneui-border/60 dark:border-dark-border/60">
           <div className="relative flex-1 w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-oneui-subtext absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by date, work summary, notes... (Press /)"
-              className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full pl-10 pr-4 py-2.5 text-xs rounded-full bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white placeholder-oneui-subtext focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+            <Filter className="w-4 h-4 text-oneui-subtext shrink-0" />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-48 px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+              className="w-full sm:w-48 px-4 py-2.5 text-xs rounded-full bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
             >
               <option value="all">All Statuses</option>
               <option value="completed">Completed 🟢</option>
@@ -207,7 +212,7 @@ export const HistoryTable: React.FC = () => {
       </div>
 
       {/* Records Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="oneui-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

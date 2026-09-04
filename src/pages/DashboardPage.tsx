@@ -39,57 +39,57 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
   return (
     <div className="space-y-6">
       
-      {/* Month Selection Control Bar */}
-      <div className="glass-panel p-3.5 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="p-2.5 rounded-xl bg-brand-500/10 text-brand-500 shrink-0">
-            <Calendar className="w-5 h-5" />
+      {/* Samsung One UI Viewing Area Banner & Month Selector */}
+      <div className="oneui-card p-5 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5 w-full sm:w-auto">
+          <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-500 flex items-center justify-center shrink-0 shadow-sm">
+            <Calendar className="w-6 h-6" />
           </div>
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-              <h3 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white tracking-tight truncate">
-                Dashboard Overview — {stats.selectedMonthLabel}
-              </h3>
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-oneui-text dark:text-white tracking-tight">
+                {stats.selectedMonthLabel}
+              </h2>
               {stats.isCurrentMonth ? (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30 shrink-0">
-                  Active Month
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-extrabold border border-emerald-500/25">
+                  Current Month
                 </span>
               ) : (
-                <span className="px-2 py-0.5 rounded-full text-[10px] bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-500/30 shrink-0">
-                  Historical Month
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] bg-brand-500/15 text-brand-600 dark:text-brand-400 font-extrabold border border-brand-500/25">
+                  History Record
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 hidden xs:block">
-              Metrics and hours tracking filtered for {stats.selectedMonthLabel}
+            <p className="text-xs text-oneui-subtext dark:text-dark-subtext mt-0.5 font-medium">
+              Attendance, worked pace & monthly statistics
             </p>
           </div>
         </div>
 
-        {/* Month Navigation Controls */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-200/40 dark:border-dark-border/40">
+        {/* Month Navigation Pill Group */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-oneui-border/60 dark:border-dark-border/60">
           {!stats.isCurrentMonth && (
             <button
               onClick={goToCurrentMonth}
-              className="px-3 py-1.5 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-xs font-bold transition-colors"
+              className="px-3.5 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-xs font-bold transition-all active:scale-95"
             >
               Current Month
             </button>
           )}
-          <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <div className="flex items-center bg-oneui-subcard dark:bg-dark-subcard p-1 rounded-full border border-oneui-border dark:border-dark-border shadow-sm">
             <button
               onClick={goToPrevMonth}
-              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all"
+              className="p-2 rounded-full text-oneui-text dark:text-dark-text hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all active:scale-90"
               title="Previous Month"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="px-2 sm:px-3 text-xs font-extrabold text-slate-800 dark:text-slate-200">
+            <span className="px-3 text-xs font-extrabold text-oneui-text dark:text-white">
               {stats.selectedMonthLabel}
             </span>
             <button
               onClick={goToNextMonth}
-              className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all"
+              className="p-2 rounded-full text-oneui-text dark:text-dark-text hover:bg-white dark:hover:bg-dark-card hover:shadow-sm transition-all active:scale-90"
               title="Next Month"
             >
               <ChevronRight className="w-4 h-4" />
@@ -101,49 +101,49 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
       {/* Clock In / Clock Out Hero Card */}
       <ClockCard />
 
-      {/* Monthly Hours Tracker & Lag Meter Card */}
-      <div className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+      {/* Samsung Health Style Monthly Workday Pace Card */}
+      <div className={`p-5 sm:p-6 rounded-squircle border transition-all ${
         stats.shiftPaceBalanceHours >= 0 
-          ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-emerald-500/5 border-emerald-500/20' 
-          : 'bg-gradient-to-r from-amber-500/10 via-rose-500/10 to-amber-500/5 border-amber-500/20'
+          ? 'bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-transparent border-emerald-500/20' 
+          : 'bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-transparent border-amber-500/20'
       }`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-start sm:items-center gap-2">
-              <span className={`p-2 rounded-xl text-white shrink-0 mt-0.5 sm:mt-0 ${
-                stats.shiftPaceBalanceHours >= 0 ? 'bg-emerald-500' : 'bg-amber-500'
+            <div className="flex items-start sm:items-center gap-3">
+              <span className={`w-11 h-11 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-md ${
+                stats.shiftPaceBalanceHours >= 0 ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-amber-500 shadow-amber-500/20'
               }`}>
                 {stats.shiftPaceBalanceHours >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
               </span>
               <div>
-                <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
-                  Monthly Workday Pace & Hours Tracker
+                <h4 className="text-base sm:text-lg font-black text-oneui-text dark:text-white">
+                  Workday Pace & Hours Balance
                 </h4>
-                <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
-                  Shift Pace: {stats.currentMonthHours}h worked across {stats.workingDaysTotal} shifts (Target: {stats.expectedHoursForRecordedShifts}h expected)
+                <p className="text-xs text-oneui-subtext dark:text-dark-subtext font-medium mt-0.5">
+                  {stats.currentMonthHours}h completed across {stats.workingDaysTotal} recorded shifts (Target: {stats.expectedHoursForRecordedShifts}h)
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Quick Metrics & Hours Lagged Display */}
-          <div className="grid grid-cols-3 sm:flex items-center gap-2 sm:gap-6 bg-white/70 dark:bg-dark-card/80 p-3 sm:p-3.5 rounded-xl border border-slate-200/50 dark:border-dark-border/50 shrink-0 text-center sm:text-left">
+          {/* Quick Pill Metrics */}
+          <div className="grid grid-cols-3 sm:flex items-center gap-2 sm:gap-6 bg-white/80 dark:bg-dark-card/90 p-3.5 sm:p-4 rounded-2xl border border-oneui-border/80 dark:border-dark-border/80 shrink-0 text-center sm:text-left shadow-sm">
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Shift Target</p>
-              <p className="text-xs sm:text-sm font-black font-mono text-slate-900 dark:text-white">
+              <p className="text-[10px] text-oneui-subtext dark:text-dark-subtext font-bold uppercase tracking-wider">Shift Target</p>
+              <p className="text-xs sm:text-sm font-black font-mono text-oneui-text dark:text-white">
                 {stats.expectedHoursForRecordedShifts}h
               </p>
             </div>
-            <div className="hidden sm:block h-7 w-[1px] bg-slate-200 dark:bg-slate-700" />
+            <div className="hidden sm:block h-7 w-[1px] bg-oneui-border dark:bg-dark-border" />
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Worked</p>
+              <p className="text-[10px] text-oneui-subtext dark:text-dark-subtext font-bold uppercase tracking-wider">Worked</p>
               <p className="text-xs sm:text-sm font-black font-mono text-brand-500">
                 {stats.currentMonthHours}h
               </p>
             </div>
-            <div className="hidden sm:block h-7 w-[1px] bg-slate-200 dark:bg-slate-700" />
+            <div className="hidden sm:block h-7 w-[1px] bg-oneui-border dark:bg-dark-border" />
             <div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Pace Balance</p>
+              <p className="text-[10px] text-oneui-subtext dark:text-dark-subtext font-bold uppercase tracking-wider">Pace Balance</p>
               <p className={`text-xs sm:text-sm font-black font-mono ${
                 stats.shiftPaceBalanceHours >= 0 ? 'text-emerald-500' : 'text-rose-500'
               }`}>
@@ -155,19 +155,19 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
           </div>
         </div>
 
-        {/* Visual Progress Bar */}
-        <div className="mt-4 space-y-1.5">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-600 dark:text-slate-300">
-              Monthly Goal Progress ({stats.workingDaysTotal} shifts recorded)
+        {/* Samsung Pill Progress Bar */}
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center justify-between text-xs font-extrabold">
+            <span className="text-oneui-text dark:text-white">
+              Monthly Goal Progress ({stats.workingDaysTotal} shifts)
             </span>
             <span className={stats.shiftPaceBalanceHours >= 0 ? 'text-emerald-500' : 'text-amber-500'}>
-              {stats.monthProgressPercent}% ({stats.currentMonthHours}h / {stats.totalTargetHours}h total month goal)
+              {stats.monthProgressPercent}% ({stats.currentMonthHours}h / {stats.totalTargetHours}h total target)
             </span>
           </div>
-          <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden p-0.5">
+          <div className="w-full h-3.5 rounded-full bg-oneui-border/60 dark:bg-dark-border/60 overflow-hidden p-0.5 shadow-inner">
             <div 
-              className={`h-full rounded-full transition-all duration-500 ${
+              className={`h-full rounded-full transition-all duration-700 ${
                 stats.shiftPaceBalanceHours >= 0 
                   ? 'bg-gradient-to-r from-emerald-500 to-teal-400' 
                   : 'bg-gradient-to-r from-amber-500 to-rose-500'

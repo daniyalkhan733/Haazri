@@ -30,31 +30,31 @@ export const MetricCard: React.FC<MetricCardProps> = ({
   const iconClasses = colorMap[colorScheme];
 
   return (
-    <div className="glass-panel p-5 transition-all hover:scale-[1.01] hover:shadow-lg flex flex-col justify-between group">
+    <div className="oneui-card p-5 transition-all duration-200 hover:scale-[1.01] hover:shadow-oneui-hover flex flex-col justify-between group">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-bold text-oneui-subtext dark:text-dark-subtext uppercase tracking-wider">
             {title}
           </p>
-          <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 tracking-tight">
+          <h3 className="text-2xl sm:text-3xl font-black text-oneui-text dark:text-white mt-1 tracking-tight">
             {value}
           </h3>
         </div>
 
-        <div className={`p-2.5 rounded-xl border shrink-0 transition-transform group-hover:scale-110 ${iconClasses}`}>
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 shadow-sm transition-transform duration-200 group-hover:scale-105 ${iconClasses}`}>
           <Icon className="w-5 h-5" />
         </div>
       </div>
 
       {(subtitle || trend) && (
-        <div className="mt-3 pt-2 border-t border-slate-100 dark:border-dark-border/40 flex items-center justify-between text-[11px]">
+        <div className="mt-3.5 pt-2.5 border-t border-oneui-border/60 dark:border-dark-border/60 flex items-center justify-between text-xs">
           {subtitle && (
-            <span className="text-slate-400 dark:text-slate-500 truncate">
+            <span className="text-oneui-subtext dark:text-dark-subtext font-medium truncate">
               {subtitle}
             </span>
           )}
           {trend && (
-            <span className="font-semibold text-brand-600 dark:text-brand-400">
+            <span className="font-extrabold text-brand-600 dark:text-brand-400">
               {trend}
             </span>
           )}
