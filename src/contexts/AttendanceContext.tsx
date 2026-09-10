@@ -12,6 +12,8 @@ import {
 import { calculateAttendanceStats } from '../utils/analyticsUtils';
 import { getTodayDateString } from '../utils/timeUtils';
 import { checkDailyReminders, requestNotificationPermission } from '../utils/notificationUtils';
+import { shouldAutoClockIn, shouldAutoClockOut } from '../utils/automationUtils';
+import { getBrowserPosition, Coordinates } from '../utils/geoUtils';
 import confetti from 'canvas-confetti';
 import { addMonths, subMonths } from 'date-fns';
 
@@ -24,7 +26,16 @@ const DEFAULT_SETTINGS: UserSettings = {
   enableNotifications: true,
   clockInReminderTime: '12:30',
   clockOutReminderTime: '21:00',
-  theme: 'dark'
+  theme: 'dark',
+  autoClockInOnOpen: false,
+  autoClockInWindowStart: '08:00',
+  autoClockInWindowEnd: '15:00',
+  autoClockOutOnTarget: false,
+  autoClockOutCutoffTime: '22:00',
+  enableGeofence: false,
+  officeLatitude: null,
+  officeLongitude: null,
+  officeRadiusMeters: 200,
 };
 
 interface ToastMessage {
@@ -41,6 +52,7 @@ interface AttendanceContextType {
   todayEntry: AttendanceEntry | null;
   settings: UserSettings;
   liveTimerSeconds: number;
+  userCoordinates: Coordinates | null;
   selectedMonthDate: Date;
   setSelectedMonthDate: (date: Date) => void;
   goToPrevMonth: () => void;
@@ -55,6 +67,7 @@ interface AttendanceContextType {
   updateRecord: (dateStr: string, data: Partial<AttendanceEntry>) => Promise<void>;
   deleteRecord: (dateStr: string) => Promise<void>;
   importRecords: (imported: Partial<AttendanceEntry>[]) => Promise<number>;
+  captureCurrentLocationAsOffice: () => Promise<boolean>;
 }
 
 const AttendanceContext = createContext<AttendanceContextType | undefined>(undefined);
@@ -81,6 +94,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
 
   // Live timer for currently clocked in session
   const [liveTimerSeconds, setLiveTimerSeconds] = useState<number>(0);
+  const [userCoordinates, setUserCoordinates] = useState<Coordinates | null>(null);
+  const [hasAttemptedAutoClockIn, setHasAttemptedAutoClockIn] = useState<boolean>(false);
 
   const addToast = (toast: Omit<ToastMessage, 'id'>) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 5);
@@ -107,6 +122,39 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     });
   };
 
+  // Helper to capture current GPS coordinates as office location
+  const captureCurrentLocationAsOffice = async (): Promise<boolean> => {
+    addToast({
+      type: 'info',
+      title: 'Detecting GPS...',
+      message: 'Fetching your high-accuracy current location.'
+    });
+
+    const pos = await getBrowserPosition();
+    if (!pos) {
+      addToast({
+        type: 'error',
+        title: 'Location Error',
+        message: 'Could not access GPS. Please ensure location permissions are granted.'
+      });
+      return false;
+    }
+
+    setUserCoordinates(pos);
+    updateSettings({
+      officeLatitude: pos.latitude,
+      officeLongitude: pos.longitude,
+      enableGeofence: true
+    });
+
+    addToast({
+      type: 'success',
+      title: 'Office Location Saved 📍',
+      message: `Set to (${pos.latitude.toFixed(4)}, ${pos.longitude.toFixed(4)}) with ${settings.officeRadiusMeters || 200}m radius.`
+    });
+    return true;
+  };
+
   // Subscribe to Realtime Database or local storage records
   useEffect(() => {
     if (!currentUser) {
@@ -128,7 +176,28 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
   const todayStr = getTodayDateString();
   const todayEntry = records[todayStr] || null;
 
-  // Live timer tick
+  // Periodic Geolocation Tracking if Geofencing is enabled
+  useEffect(() => {
+    if (!settings.enableGeofence) return;
+
+    let isMounted = true;
+    const fetchLoc = async () => {
+      const pos = await getBrowserPosition();
+      if (isMounted && pos) {
+        setUserCoordinates(pos);
+      }
+    };
+
+    fetchLoc();
+    const geoInterval = setInterval(fetchLoc, 45000); // Check every 45s
+
+    return () => {
+      isMounted = false;
+      clearInterval(geoInterval);
+    };
+  }, [settings.enableGeofence]);
+
+  // Live timer tick & Auto Clock-Out evaluation
   useEffect(() => {
     let interval: any = null;
 
@@ -136,9 +205,25 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
       const loginTimestamp = new Date(todayEntry.loginTime).getTime();
 
       const updateTimer = () => {
-        const now = new Date().getTime();
-        const diffSecs = Math.floor((now - loginTimestamp) / 1000);
-        setLiveTimerSeconds(diffSecs > 0 ? diffSecs : 0);
+        const now = new Date();
+        const diffSecs = Math.floor((now.getTime() - loginTimestamp) / 1000);
+        const currentSecs = diffSecs > 0 ? diffSecs : 0;
+        setLiveTimerSeconds(currentSecs);
+
+        // Check for Smart Auto Clock-Out
+        const autoOutCheck = shouldAutoClockOut(settings, todayEntry, currentSecs, now);
+        if (autoOutCheck.shouldClockOut && currentUser) {
+          clockOutUser(currentUser.uid, settings, todayEntry).then((res) => {
+            if (res.success) {
+              addToast({
+                type: 'success',
+                title: '⚡ Auto Clocked Out',
+                message: `Shift automatically completed: ${autoOutCheck.reason}.`
+              });
+              confetti({ particleCount: 100, spread: 70, origin: { y: 0.7 } });
+            }
+          });
+        }
       };
 
       updateTimer();
@@ -150,7 +235,61 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [todayEntry]);
+  }, [todayEntry, settings, currentUser]);
+
+  // Smart Auto Clock-In & URL Action triggers
+  useEffect(() => {
+    if (loading || !currentUser || hasAttemptedAutoClockIn) return;
+
+    // 1. Check URL parameters for shortcut/NFC trigger (e.g. ?action=clockin or ?action=clockout)
+    const urlParams = new URLSearchParams(window.location.search);
+    const actionParam = urlParams.get('action');
+
+    if (actionParam === 'clockin' && (!todayEntry || !todayEntry.loginTime)) {
+      setHasAttemptedAutoClockIn(true);
+      clockInUser(currentUser.uid, settings, 'Triggered via Webhook / Shortcut').then(res => {
+        if (res.success) {
+          addToast({
+            type: 'success',
+            title: '⚡ Quick Clocked In',
+            message: 'Clocked in via shortcut trigger.'
+          });
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
+        }
+      });
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    } else if (actionParam === 'clockout' && todayEntry && todayEntry.status === 'working') {
+      clockOutUser(currentUser.uid, settings, todayEntry).then(res => {
+        if (res.success) {
+          addToast({
+            type: 'success',
+            title: '⚡ Quick Clocked Out',
+            message: 'Clocked out via shortcut trigger.'
+          });
+        }
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    // 2. Evaluate Smart In-App / Geofence Auto Clock-In
+    const autoInDecision = shouldAutoClockIn(settings, todayEntry, userCoordinates);
+    if (autoInDecision.shouldClockIn) {
+      setHasAttemptedAutoClockIn(true);
+      clockInUser(currentUser.uid, settings, `⚡ Auto: ${autoInDecision.reason}`).then(res => {
+        if (res.success) {
+          addToast({
+            type: 'success',
+            title: '⚡ Auto Clocked In',
+            message: `${autoInDecision.reason}. Have a productive day!`
+          });
+          confetti({ particleCount: 80, spread: 60, origin: { y: 0.8 } });
+        }
+      });
+    }
+  }, [loading, currentUser, todayEntry, settings, userCoordinates, hasAttemptedAutoClockIn]);
 
   // Periodic Reminder notification check
   useEffect(() => {
@@ -284,6 +423,7 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         todayEntry,
         settings,
         liveTimerSeconds,
+        userCoordinates,
         selectedMonthDate,
         setSelectedMonthDate,
         goToPrevMonth,
@@ -297,7 +437,8 @@ export const AttendanceProvider: React.FC<{ children: ReactNode }> = ({ children
         clockOut,
         updateRecord,
         deleteRecord,
-        importRecords
+        importRecords,
+        captureCurrentLocationAsOffice
       }}
     >
       {children}

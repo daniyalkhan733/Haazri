@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAttendance } from '../../contexts/AttendanceContext';
 import { formatTimeDisplay, formatTimerSeconds, getSmartMessage } from '../../utils/timeUtils';
-import { Play, Square, Clock, Sparkles, AlertCircle, CheckCircle2, Smile } from 'lucide-react';
+import { Play, Square, Clock, Sparkles, AlertCircle, CheckCircle2, Smile, Zap, MapPin } from 'lucide-react';
 import { MoodType } from '../../types';
 
 export const ClockCard: React.FC = () => {
-  const { todayEntry, liveTimerSeconds, settings, clockIn, clockOut } = useAttendance();
+  const { todayEntry, liveTimerSeconds, settings, clockIn, clockOut, userCoordinates } = useAttendance();
   const [loading, setLoading] = useState(false);
 
   const isClockedIn = Boolean(todayEntry && todayEntry.loginTime);
@@ -14,6 +14,10 @@ export const ClockCard: React.FC = () => {
   const isWorking = Boolean(isClockedIn && !isClockedOut);
 
   const smartMessage = getSmartMessage(todayEntry, settings);
+
+  // Remaining seconds until target hours auto-wrap
+  const targetSeconds = (settings.targetWorkingHours || 9) * 3600;
+  const remainingSeconds = Math.max(0, targetSeconds - liveTimerSeconds);
 
   const handleClockIn = async () => {
     setLoading(true);
@@ -44,22 +48,46 @@ export const ClockCard: React.FC = () => {
         
         {/* Left Section: Status & Smart Message */}
         <div className="space-y-3.5 text-center lg:text-left flex-1 w-full">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-oneui-subcard dark:bg-dark-subcard text-oneui-text dark:text-dark-text border border-oneui-border dark:border-dark-border shadow-sm">
-            {isWorking ? (
-              <>
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-emerald-600 dark:text-emerald-400 font-extrabold tracking-wide">ACTIVE SHIFT</span>
-              </>
-            ) : isClockedOut ? (
-              <>
-                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" />
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold tracking-wide">COMPLETED</span>
-              </>
-            ) : (
-              <>
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
-                <span className="text-amber-600 dark:text-amber-400 font-extrabold tracking-wide">NOT CLOCKED IN</span>
-              </>
+          <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-oneui-subcard dark:bg-dark-subcard text-oneui-text dark:text-dark-text border border-oneui-border dark:border-dark-border shadow-sm">
+              {isWorking ? (
+                <>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-emerald-600 dark:text-emerald-400 font-extrabold tracking-wide">ACTIVE SHIFT</span>
+                </>
+              ) : isClockedOut ? (
+                <>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="text-indigo-600 dark:text-indigo-400 font-extrabold tracking-wide">COMPLETED</span>
+                </>
+              ) : (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-amber-600 dark:text-amber-400 font-extrabold tracking-wide">NOT CLOCKED IN</span>
+                </>
+              )}
+            </div>
+
+            {/* Smart Automation Status Badges */}
+            {settings.autoClockInOnOpen && !isClockedIn && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <Zap className="w-3 h-3" />
+                <span>Auto-In Active</span>
+              </span>
+            )}
+
+            {settings.enableGeofence && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                <MapPin className="w-3 h-3" />
+                <span>Geofence Armed</span>
+              </span>
+            )}
+
+            {isWorking && settings.autoClockOutOnTarget && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                <Zap className="w-3 h-3" />
+                <span>Auto-Wrap in {formatTimerSeconds(remainingSeconds)}</span>
+              </span>
             )}
           </div>
 
