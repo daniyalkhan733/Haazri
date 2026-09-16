@@ -120,7 +120,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
                   Workday Pace & Hours Balance
                 </h4>
                 <p className="text-xs text-oneui-subtext dark:text-dark-subtext font-medium mt-0.5">
-                  {stats.currentMonthHours}h completed across {stats.workingDaysTotal} recorded shifts (Target: {stats.expectedHoursForRecordedShifts}h)
+                  {stats.currentMonthHours}h worked across {stats.workingDaysTotal} recorded workdays ({stats.presentDaysCount} attended{stats.absentDaysCount > 0 ? `, ${stats.absentDaysCount} absent` : ''}) · Target: {stats.expectedHoursForRecordedShifts}h
                 </p>
               </div>
             </div>
@@ -159,7 +159,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
         <div className="mt-5 space-y-2">
           <div className="flex items-center justify-between text-xs font-extrabold">
             <span className="text-oneui-text dark:text-white">
-              Monthly Goal Progress ({stats.workingDaysTotal} shifts)
+              Monthly Goal Progress ({stats.presentDaysCount} attended / {stats.workingDaysTotal} total workdays)
             </span>
             <span className={stats.shiftPaceBalanceHours >= 0 ? 'text-emerald-500' : 'text-amber-500'}>
               {stats.monthProgressPercent}% ({stats.currentMonthHours}h / {stats.totalTargetHours}h total target)

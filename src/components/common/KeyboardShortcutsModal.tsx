@@ -11,8 +11,6 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({ 
   const shortcuts = [
     { key: 'C', description: 'Clock In or Clock Out' },
     { key: 'D', description: 'Navigate to Dashboard' },
-    { key: 'M', description: 'Navigate to Calendar' },
-    { key: 'R', description: 'Navigate to Reports' },
     { key: 'H', description: 'Navigate to History' },
     { key: 'S', description: 'Navigate to Settings' },
     { key: 'T', description: 'Toggle Dark / Light Theme' },

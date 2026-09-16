@@ -36,12 +36,31 @@ export function calculateAttendanceStats(
     currentStatus = todayEntry.status;
   }
 
-  // Current Selected Month Worked Hours
-  const currentMonthMinutes = currentMonthEntries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+  // Attended shifts (Present, Completed, Working, Late, Half-day)
+  const attendedShifts = currentMonthEntries.filter(e => 
+    e.status !== 'vacation' && e.status !== 'absent'
+  );
+  const presentDaysCount = attendedShifts.length;
+
+  // Absent days
+  const absentShifts = currentMonthEntries.filter(e => e.status === 'absent');
+  const absentDaysCount = absentShifts.length;
+  const absentHoursDeficit = Number((absentDaysCount * settings.targetWorkingHours).toFixed(1));
+
+  // Vacation days
+  const vacationShifts = currentMonthEntries.filter(e => e.status === 'vacation');
+  const vacationDaysCount = vacationShifts.length;
+
+  // Total recorded working days (Attended + Absent)
+  // e.g. 12 present days + 3 absent days = 15 working days total
+  const workingDaysTotal = presentDaysCount + absentDaysCount;
+
+  // Current Selected Month Actually Worked Hours (Absent days contribute 0h)
+  const currentMonthMinutes = attendedShifts.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
   const currentMonthHours = Number((currentMonthMinutes / 60).toFixed(1));
 
   // Valid login entries for month averages
-  const validLogins = currentMonthEntries.filter(e => e.loginTime);
+  const validLogins = attendedShifts.filter(e => e.loginTime);
   let avgLoginTime = '--:--';
   if (validLogins.length > 0) {
     let totalMinutesFromMidnight = 0;
@@ -58,7 +77,7 @@ export function calculateAttendanceStats(
   }
 
   // Valid logout entries for month averages
-  const validLogouts = currentMonthEntries.filter(e => e.logoutTime);
+  const validLogouts = attendedShifts.filter(e => e.logoutTime);
   let avgLogoutTime = '--:--';
   if (validLogouts.length > 0) {
     let totalMinutesFromMidnight = 0;
@@ -75,46 +94,43 @@ export function calculateAttendanceStats(
   }
 
   // Late days count for the SELECTED MONTH ONLY (Rule: ONLY logins after cutoff are Late)
-  const lateDaysCount = currentMonthEntries.filter(e => {
-    if (e.status === 'vacation' || e.status === 'absent') return false;
+  const lateDaysCount = attendedShifts.filter(e => {
     if (e.loginTime) {
       return calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0;
     }
     return false;
   }).length;
 
-  // Work Shifts count for selected month (including Sundays as regular work days)
-  const activeWorkShifts = currentMonthEntries.filter(e => e.status !== 'vacation' && e.status !== 'absent');
-  const workingDaysTotal = activeWorkShifts.length;
-
-  // SHIFT PACE CALCULATIONS (Based on number of recorded work days / shifts)
+  // SHIFT PACE CALCULATIONS (Based on number of recorded working days: present + absent)
+  // e.g. 15 working days * 9h = 135.0h expected
   const expectedHoursForRecordedShifts = Number((workingDaysTotal * settings.targetWorkingHours).toFixed(1));
+  
+  // Pace balance = Actual worked hours - Expected target hours
+  // e.g. 108h worked - 135h expected = -27.0h (minus 27 hours)
   const shiftPaceBalanceHours = Number((currentMonthHours - expectedHoursForRecordedShifts).toFixed(1));
   const shiftPaceOvertimeHours = Math.max(0, shiftPaceBalanceHours);
   const shiftPaceShortfallHours = Math.max(0, Number((-shiftPaceBalanceHours).toFixed(1)));
 
-  // MONTHLY TARGET & FLEX CALCULATIONS
+  // MONTHLY TARGET & FLEX CALCULATIONS (Based on all calendar days in month)
   const daysInCurrentMonth = getDaysInMonth(targetDate);
   const totalTargetHours = Number((daysInCurrentMonth * settings.targetWorkingHours).toFixed(1));
-  const totalActualHours = currentMonthHours; // Month actual hours
+  const totalActualHours = currentMonthHours;
 
   // Net Flex Balance for Month = Month Worked Hours - Month Target Hours
   const netFlexBalanceHours = Number((currentMonthHours - totalTargetHours).toFixed(1));
-  
-  // Net Overtime & Shortfall Hours for Month
   const netOvertimeHours = Math.max(0, netFlexBalanceHours);
   const netShortfallHours = Math.max(0, Number((-netFlexBalanceHours).toFixed(1)));
 
   // Count days under target hours in selected month covered by flex hours
   const targetMins = settings.targetWorkingHours * 60;
-  const shortDays = activeWorkShifts.filter(e => e.workedMinutes > 0 && e.workedMinutes < targetMins);
+  const shortDays = attendedShifts.filter(e => e.workedMinutes > 0 && e.workedMinutes < targetMins);
   const coveredShortfallDaysCount = netFlexBalanceHours >= 0 ? shortDays.length : 0;
 
   // Total Overtime Minutes in month
   const overtimeMinutesTotal = Math.round(netOvertimeHours * 60);
 
   // On-Time Punctuality % for Selected Month
-  const onTimeShiftsCount = activeWorkShifts.filter(e => {
+  const onTimeShiftsCount = attendedShifts.filter(e => {
     const isLate = e.status === 'late' || (e.loginTime && calculateLateMinutes(e.loginTime, settings.officeStartTime) > 0);
     return !isLate;
   }).length;
@@ -123,7 +139,7 @@ export function calculateAttendanceStats(
     ? Math.round((onTimeShiftsCount / workingDaysTotal) * 100)
     : 100;
 
-  const missedDaysCount = currentMonthEntries.filter(e => e.status === 'absent').length;
+  const missedDaysCount = absentDaysCount;
 
   // Streaks calculation (across overall history)
   const { currentStreak, longestStreak } = calculateStreaks(records);
@@ -149,6 +165,10 @@ export function calculateAttendanceStats(
     currentStreak,
     longestStreak,
     workingDaysTotal,
+    presentDaysCount,
+    absentDaysCount,
+    vacationDaysCount,
+    absentHoursDeficit,
     missedDaysCount,
     
     // Monthly Flex Hours stats

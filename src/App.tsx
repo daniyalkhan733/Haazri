@@ -9,8 +9,6 @@ import { KeyboardShortcutsModal } from './components/common/KeyboardShortcutsMod
 import { AuthModal } from './components/auth/AuthModal';
 
 import { DashboardPage } from './pages/DashboardPage';
-import { CalendarPage } from './pages/CalendarPage';
-import { ReportsPage } from './pages/ReportsPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoadingScreen } from './components/common/LoadingScreen';
@@ -45,14 +43,6 @@ function AppContent() {
         case 'D':
           e.preventDefault();
           setCurrentTab('dashboard');
-          break;
-        case 'M':
-          e.preventDefault();
-          setCurrentTab('calendar');
-          break;
-        case 'R':
-          e.preventDefault();
-          setCurrentTab('reports');
           break;
         case 'H':
           e.preventDefault();
@@ -108,8 +98,6 @@ function AppContent() {
           {currentTab === 'dashboard' && (
             <DashboardPage onNavigateToHistory={() => setCurrentTab('history')} />
           )}
-          {currentTab === 'calendar' && <CalendarPage />}
-          {currentTab === 'reports' && <ReportsPage />}
           {currentTab === 'history' && <HistoryPage />}
           {currentTab === 'settings' && <SettingsPage />}
         </main>

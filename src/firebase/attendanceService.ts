@@ -199,7 +199,7 @@ export async function updateAttendanceRecord(
     workedMinutes: 0,
     lateMinutes: 0,
     overtimeMinutes: 0,
-    status: 'present',
+    status: 'completed',
     notes: '',
     mood: '😊'
   };
@@ -211,11 +211,23 @@ export async function updateAttendanceRecord(
     updatedAt: new Date().toISOString()
   };
 
-  // Re-calculate minutes if login and logout are present
-  if (merged.loginTime && merged.logoutTime) {
+  // If flagged as absent or vacation, strictly zero out hours and nullify times
+  if (merged.status === 'absent' || merged.status === 'vacation') {
+    merged.workedMinutes = 0;
+    merged.lateMinutes = 0;
+    merged.overtimeMinutes = 0;
+    merged.loginTime = null;
+    merged.logoutTime = null;
+  } else if (merged.loginTime && merged.logoutTime) {
+    // Re-calculate minutes if login and logout are present
     merged.workedMinutes = calculateWorkedMinutes(merged.loginTime, merged.logoutTime);
     merged.lateMinutes = calculateLateMinutes(merged.loginTime, settings.officeStartTime);
     merged.overtimeMinutes = calculateOvertimeMinutes(merged.workedMinutes, settings.targetWorkingHours);
+  } else {
+    // No complete times provided
+    merged.workedMinutes = 0;
+    merged.lateMinutes = 0;
+    merged.overtimeMinutes = 0;
   }
 
   if (database && isFirebaseConfigured && uid) {
@@ -256,13 +268,15 @@ export async function batchImportAttendance(
     if (!item.date) continue;
     const dateStr = item.date;
 
+    const isOff = item.status === 'absent' || item.status === 'vacation';
+
     const merged: AttendanceEntry = {
       date: dateStr,
-      loginTime: item.loginTime || null,
-      logoutTime: item.logoutTime || null,
-      workedMinutes: item.workedMinutes || 0,
-      lateMinutes: item.lateMinutes || 0,
-      overtimeMinutes: item.overtimeMinutes || 0,
+      loginTime: isOff ? null : (item.loginTime || null),
+      logoutTime: isOff ? null : (item.logoutTime || null),
+      workedMinutes: isOff ? 0 : (item.workedMinutes || 0),
+      lateMinutes: isOff ? 0 : (item.lateMinutes || 0),
+      overtimeMinutes: isOff ? 0 : (item.overtimeMinutes || 0),
       status: item.status || 'completed',
       notes: item.notes || '',
       todayWork: item.todayWork || '',

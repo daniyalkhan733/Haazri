@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAttendance } from '../../contexts/AttendanceContext';
 import { formatTimeDisplay, formatTimerSeconds, getSmartMessage } from '../../utils/timeUtils';
-import { Play, Square, Clock, Sparkles, AlertCircle, CheckCircle2, Smile, Zap, MapPin } from 'lucide-react';
+import { Play, Square, Clock, Sparkles, AlertCircle, CheckCircle2, Smile } from 'lucide-react';
 import { MoodType } from '../../types';
 
 export const ClockCard: React.FC = () => {
-  const { todayEntry, liveTimerSeconds, settings, clockIn, clockOut, userCoordinates } = useAttendance();
+  const { todayEntry, liveTimerSeconds, settings, clockIn, clockOut } = useAttendance();
   const [loading, setLoading] = useState(false);
 
   const isClockedIn = Boolean(todayEntry && todayEntry.loginTime);
@@ -14,10 +14,6 @@ export const ClockCard: React.FC = () => {
   const isWorking = Boolean(isClockedIn && !isClockedOut);
 
   const smartMessage = getSmartMessage(todayEntry, settings);
-
-  // Remaining seconds until target hours auto-wrap
-  const targetSeconds = (settings.targetWorkingHours || 9) * 3600;
-  const remainingSeconds = Math.max(0, targetSeconds - liveTimerSeconds);
 
   const handleClockIn = async () => {
     setLoading(true);
@@ -67,28 +63,6 @@ export const ClockCard: React.FC = () => {
                 </>
               )}
             </div>
-
-            {/* Smart Automation Status Badges */}
-            {settings.autoClockInOnOpen && !isClockedIn && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                <Zap className="w-3 h-3" />
-                <span>Auto-In Active</span>
-              </span>
-            )}
-
-            {settings.enableGeofence && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
-                <MapPin className="w-3 h-3" />
-                <span>Geofence Armed</span>
-              </span>
-            )}
-
-            {isWorking && settings.autoClockOutOnTarget && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                <Zap className="w-3 h-3" />
-                <span>Auto-Wrap in {formatTimerSeconds(remainingSeconds)}</span>
-              </span>
-            )}
           </div>
 
           <div>

@@ -11,7 +11,7 @@ import {
 import { useAttendance } from '../../contexts/AttendanceContext';
 import { formatTimerSeconds } from '../../utils/timeUtils';
 
-export type NavigationTab = 'dashboard' | 'calendar' | 'reports' | 'history' | 'settings';
+export type NavigationTab = 'dashboard' | 'history' | 'settings';
 
 interface SidebarProps {
   currentTab: NavigationTab;
@@ -23,8 +23,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentTab, onTabChange }) => 
 
   const navItems = [
     { id: 'dashboard' as NavigationTab, label: 'Dashboard', icon: LayoutDashboard, color: 'text-blue-500 bg-blue-500/10' },
-    { id: 'calendar' as NavigationTab, label: 'Calendar', icon: CalendarIcon, color: 'text-indigo-500 bg-indigo-500/10' },
-    { id: 'reports' as NavigationTab, label: 'Analytics', icon: BarChart3, color: 'text-purple-500 bg-purple-500/10' },
     { id: 'history' as NavigationTab, label: 'History Logs', icon: HistoryIcon, color: 'text-emerald-500 bg-emerald-500/10' },
     { id: 'settings' as NavigationTab, label: 'Settings', icon: SettingsIcon, color: 'text-amber-500 bg-amber-500/10' },
   ];

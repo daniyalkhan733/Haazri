@@ -45,17 +45,6 @@ export interface UserSettings {
   clockInReminderTime: string; // "12:30"
   clockOutReminderTime: string; // "21:00"
   theme: 'dark' | 'light' | 'system';
-
-  // Smart Automation & Geofencing
-  autoClockInOnOpen?: boolean; // Auto clock in when opening the app on a workday
-  autoClockInWindowStart?: string; // e.g. "08:00"
-  autoClockInWindowEnd?: string; // e.g. "15:00"
-  autoClockOutOnTarget?: boolean; // Auto clock out once target working hours are reached
-  autoClockOutCutoffTime?: string; // e.g. "22:00" cutoff failsafe
-  enableGeofence?: boolean; // GPS office geofence trigger
-  officeLatitude?: number | null;
-  officeLongitude?: number | null;
-  officeRadiusMeters?: number; // e.g. 200m
 }
 
 export interface AttendanceStats {
@@ -73,6 +62,10 @@ export interface AttendanceStats {
   currentStreak: number;
   longestStreak: number;
   workingDaysTotal: number;
+  presentDaysCount: number;
+  absentDaysCount: number;
+  vacationDaysCount: number;
+  absentHoursDeficit: number;
   missedDaysCount: number;
   
   // Selected Month Flex-Hours & Cumulative Balance

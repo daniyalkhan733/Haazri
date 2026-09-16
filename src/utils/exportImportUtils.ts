@@ -186,27 +186,43 @@ export function parseCSVImport(
     const lowerRemarks = rawRemarks.toLowerCase();
     const isSundayDay = new Date(`${fullDateStr}T00:00:00`).getDay() === 0;
 
-    // Sunday Handling Rule: Sunday is a regular working day (11:00 AM - 08:00 PM = 9 hours)
-    if (lowerRemarks.includes('sunday') || lowerRemarks.includes('sun') || isSundayDay) {
+    // 1. Check for Absent or Zero-hour logs first
+    if (
+      lowerRemarks.includes('absent') ||
+      rawLogin === '0' ||
+      rawLogout === '0' ||
+      rawHours === 0
+    ) {
+      status = 'absent';
+      loginIso = null;
+      logoutIso = null;
+    } else if (lowerRemarks.includes('leave') || lowerRemarks.includes('vacation')) {
+      status = 'vacation';
+      loginIso = null;
+      logoutIso = null;
+    } else if (lowerRemarks.includes('half')) {
+      status = 'half_day';
+    } else if (lowerRemarks.includes('sunday') || lowerRemarks.includes('sun') || isSundayDay) {
+      // Sunday Handling Rule: Sunday is a regular working day (11:00 AM - 08:00 PM = 9 hours)
       if (!loginIso) loginIso = `${fullDateStr}T11:00:00`;
       if (!logoutIso) logoutIso = `${fullDateStr}T20:00:00`;
       status = 'completed';
-    } else if (lowerRemarks.includes('leave') || lowerRemarks.includes('vacation')) {
-      status = 'vacation';
-    } else if (lowerRemarks.includes('absent')) {
-      status = 'absent';
-    } else if (lowerRemarks.includes('half')) {
-      status = 'half_day';
     } else if (!loginIso && !logoutIso) {
-      status = 'vacation';
+      status = 'absent';
     }
 
-    // Compute worked minutes directly from Google Sheets decimal hours (Col D) if available!
+    // Compute worked minutes
     let workedMinutes = 0;
-    if (!isNaN(rawHours) && rawHours > 0) {
+    if (status === 'absent' || status === 'vacation') {
+      workedMinutes = 0;
+      loginIso = null;
+      logoutIso = null;
+    } else if (!isNaN(rawHours) && rawHours > 0) {
       workedMinutes = Math.round(rawHours * 60);
     } else if (loginIso && logoutIso) {
       workedMinutes = calculateWorkedMinutes(loginIso, logoutIso);
+    } else if (status === 'half_day') {
+      workedMinutes = 270; // 4.5 hours
     } else if (status === 'completed') {
       workedMinutes = 540; // Default 9 hours
     }

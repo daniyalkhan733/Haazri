@@ -16,8 +16,13 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ onViewHistory })
     .slice(0, 5);
 
   const getStatusBadge = (entry: AttendanceEntry) => {
+    const isSunday = new Date(`${entry.date}T00:00:00`).getDay() === 0;
+
     switch (entry.status) {
       case 'completed':
+        if (isSunday) {
+          return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">🌅 Sunday</span>;
+        }
         return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">Completed</span>;
       case 'working':
         return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20 animate-pulse">Working</span>;
@@ -25,6 +30,8 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({ onViewHistory })
         return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">Late</span>;
       case 'vacation':
         return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">Vacation</span>;
+      case 'absent':
+        return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">Absent (-9h)</span>;
       case 'half_day':
         return <span className="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">Half Day</span>;
       default:
