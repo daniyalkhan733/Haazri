@@ -3,6 +3,7 @@ import { useAttendance } from '../contexts/AttendanceContext';
 import { ClockCard } from '../components/dashboard/ClockCard';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { RecentActivity } from '../components/dashboard/RecentActivity';
+import { SalaryCard } from '../components/dashboard/SalaryCard';
 import { formatTimeDisplay, formatDuration } from '../utils/timeUtils';
 import { 
   Clock, 
@@ -25,9 +26,10 @@ import {
 
 interface DashboardPageProps {
   onNavigateToHistory: () => void;
+  onNavigateToSettings?: () => void;
 }
 
-export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistory }) => {
+export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistory, onNavigateToSettings }) => {
   const { 
     stats, 
     settings, 
@@ -100,6 +102,9 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({ onNavigateToHistor
 
       {/* Clock In / Clock Out Hero Card */}
       <ClockCard />
+
+      {/* Salary & 50% Late Deduction Analytics Card */}
+      <SalaryCard onNavigateToSettings={onNavigateToSettings} />
 
       {/* Samsung Health Style Monthly Workday Pace Card */}
       <div className={`p-5 sm:p-6 rounded-squircle border transition-all ${

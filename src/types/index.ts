@@ -45,6 +45,10 @@ export interface UserSettings {
   clockInReminderTime: string; // "12:30"
   clockOutReminderTime: string; // "21:00"
   theme: 'dark' | 'light' | 'system';
+  monthlySalary: number; // e.g. 50000
+  currencySymbol: string; // e.g. "Rs" or "$"
+  lateGraceLimit: number; // Default 3 grace late days
+  latePenaltyPercent: number; // Default 50%
 }
 
 export interface AttendanceStats {
@@ -86,4 +90,18 @@ export interface AttendanceStats {
   selectedMonthLabel: string;
   monthProgressPercent: number;
   isCurrentMonth: boolean;
+
+  // Salary & Late Deduction Analytics
+  monthlySalary: number;
+  currencySymbol: string;
+  daysInSelectedMonth: number;
+  baseDailyRate: number;
+  hourlySalaryRate: number;
+  totalLateDeductions: number;
+  earnedSalaryBeforeDeductions: number;
+  netPayableSalary: number;
+  estimatedFullMonthPayable: number;
+  graceLateDaysUsed: number;
+  penalizedLateDaysCount: number;
+  remainingGraceCount: number;
 }

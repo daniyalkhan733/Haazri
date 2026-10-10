@@ -13,9 +13,12 @@ import {
   HardDrive, 
   Save, 
   ShieldCheck, 
-  Download 
+  Download,
+  Wallet,
+  AlertTriangle
 } from 'lucide-react';
 import { exportToCSV } from '../utils/exportImportUtils';
+import { getDaysInMonth } from 'date-fns';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, records } = useAttendance();
@@ -28,6 +31,23 @@ export const SettingsPage: React.FC = () => {
   const [enableNotifications, setEnableNotifications] = useState(settings.enableNotifications);
   const [clockInReminderTime, setClockInReminderTime] = useState(settings.clockInReminderTime);
   const [clockOutReminderTime, setClockOutReminderTime] = useState(settings.clockOutReminderTime);
+  
+  // Salary and late penalty rule states
+  const [monthlySalary, setMonthlySalary] = useState(settings.monthlySalary ?? 50000);
+  const [currencySymbol, setCurrencySymbol] = useState(settings.currencySymbol || 'Rs');
+  const [lateGraceLimit, setLateGraceLimit] = useState(settings.lateGraceLimit ?? 3);
+  const [latePenaltyPercent, setLatePenaltyPercent] = useState(settings.latePenaltyPercent ?? 50);
+
+  const daysInCurrentMonth = getDaysInMonth(new Date());
+  const previewDailyRate = daysInCurrentMonth > 0 && monthlySalary > 0 
+    ? Number((monthlySalary / daysInCurrentMonth).toFixed(2)) 
+    : 0;
+  const previewHourlyRate = targetWorkingHours > 0 && previewDailyRate > 0 
+    ? Number((previewDailyRate / targetWorkingHours).toFixed(2)) 
+    : 0;
+  const previewPenaltyPerDay = previewDailyRate > 0 
+    ? Number((previewDailyRate * (latePenaltyPercent / 100)).toFixed(2)) 
+    : 0;
 
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +58,10 @@ export const SettingsPage: React.FC = () => {
       enableNotifications,
       clockInReminderTime,
       clockOutReminderTime,
+      monthlySalary: Number(monthlySalary),
+      currencySymbol,
+      lateGraceLimit: Number(lateGraceLimit),
+      latePenaltyPercent: Number(latePenaltyPercent),
     });
   };
 
@@ -111,6 +135,143 @@ export const SettingsPage: React.FC = () => {
                 onChange={(e) => setLunchBreakMinutes(Number(e.target.value))}
                 className="w-full px-4 py-2.5 text-sm rounded-2xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
+            </div>
+          </div>
+        </div>
+
+        {/* Salary & Late Deduction Policy Configuration */}
+        <div className="oneui-card p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-oneui-border/60 dark:border-dark-border/60">
+            <h3 className="font-extrabold text-oneui-text dark:text-white text-base flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <span>Salary & Late Deduction Policy</span>
+            </h3>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 w-fit">
+              Active Attendance Rule
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-oneui-subtext dark:text-dark-subtext mb-1.5 uppercase tracking-wider">
+                Monthly Salary
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  step={100}
+                  value={monthlySalary}
+                  onChange={(e) => setMonthlySalary(Number(e.target.value))}
+                  placeholder="e.g. 50000"
+                  className="w-full pl-4 pr-12 py-2.5 text-sm rounded-2xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">
+                  {currencySymbol}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-oneui-subtext dark:text-dark-subtext mb-1.5 uppercase tracking-wider">
+                Currency Symbol
+              </label>
+              <select
+                value={currencySymbol}
+                onChange={(e) => setCurrencySymbol(e.target.value)}
+                className="w-full px-4 py-2.5 text-sm rounded-2xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold cursor-pointer"
+              >
+                <option value="Rs">Rs (PKR / INR)</option>
+                <option value="$">$ (USD)</option>
+                <option value="₹">₹ (INR)</option>
+                <option value="€">€ (EUR)</option>
+                <option value="£">£ (GBP)</option>
+                <option value="AED">AED (Dirham)</option>
+                <option value="SAR">SAR (Riyal)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-oneui-subtext dark:text-dark-subtext mb-1.5 uppercase tracking-wider">
+                Late Grace Limit
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={31}
+                  value={lateGraceLimit}
+                  onChange={(e) => setLateGraceLimit(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 text-sm rounded-2xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                  Days
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-oneui-subtext dark:text-dark-subtext mb-1.5 uppercase tracking-wider">
+                Late Penalty %
+              </label>
+              <div className="relative">
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={latePenaltyPercent}
+                  onChange={(e) => setLatePenaltyPercent(Number(e.target.value))}
+                  className="w-full px-4 py-2.5 text-sm rounded-2xl bg-oneui-subcard dark:bg-dark-subcard border border-oneui-border dark:border-dark-border text-oneui-text dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500 font-bold"
+                />
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                  % Daily
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Rule Details & Live Calculation Box */}
+          <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-rose-500/5 to-transparent border border-amber-500/20 space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-500 flex items-center justify-center shrink-0 mt-0.5">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <div>
+                <p className="text-xs font-extrabold text-oneui-text dark:text-white">
+                  3-Day Late Arrival Grace & 50% Daily Salary Deduction Rule
+                </p>
+                <p className="text-[11px] text-oneui-subtext dark:text-dark-subtext mt-0.5 leading-relaxed">
+                  Employees have a grace allowance of <strong>{lateGraceLimit} late arrivals</strong> per month. If you are late more than 3 times, then starting on the 4th late arrival, <strong>{latePenaltyPercent}%</strong> will be deducted from that day's daily salary. Daily salary is computed based on your worked hours and the number of days in the current month ({daysInCurrentMonth} days).
+                </p>
+              </div>
+            </div>
+
+            {/* Live Calculation Chips */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-amber-500/20">
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-dark-card/70 border border-oneui-border/60 dark:border-dark-border/60">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Month Days</p>
+                <p className="text-xs font-black font-mono text-slate-900 dark:text-white">{daysInCurrentMonth} Days</p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-dark-card/70 border border-oneui-border/60 dark:border-dark-border/60">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Daily Base Rate</p>
+                <p className="text-xs font-black font-mono text-emerald-600 dark:text-emerald-400">
+                  {currencySymbol} {previewDailyRate.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-dark-card/70 border border-oneui-border/60 dark:border-dark-border/60">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Hourly Rate ({targetWorkingHours}h)</p>
+                <p className="text-xs font-black font-mono text-brand-600 dark:text-brand-400">
+                  {currencySymbol} {previewHourlyRate.toLocaleString()}
+                </p>
+              </div>
+              <div className="p-2.5 rounded-xl bg-white/70 dark:bg-dark-card/70 border border-rose-500/30 bg-rose-500/5">
+                <p className="text-[10px] font-bold text-rose-500 uppercase">Penalty (Day 4+)</p>
+                <p className="text-xs font-black font-mono text-rose-600 dark:text-rose-400">
+                  -{currencySymbol} {previewPenaltyPerDay.toLocaleString()}
+                </p>
+              </div>
             </div>
           </div>
         </div>

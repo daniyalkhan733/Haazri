@@ -1,6 +1,7 @@
 import { AttendanceEntry, AttendanceStats, UserSettings } from '../types';
 import { parseISO, format, isSameMonth, subDays, differenceInCalendarDays, parse, getDaysInMonth } from 'date-fns';
 import { calculateLateMinutes } from './timeUtils';
+import { calculateMonthSalary } from './salaryUtils';
 
 export function calculateAttendanceStats(
   records: Record<string, AttendanceEntry>,
@@ -149,6 +150,7 @@ export function calculateAttendanceStats(
     ? Math.min(100, Math.round((currentMonthHours / totalTargetHours) * 100))
     : 0;
   const isCurrentMonth = isSameMonth(targetDate, new Date());
+  const salaryAnalytics = calculateMonthSalary(records, settings, targetDate);
 
   return {
     todayLogin,
@@ -189,6 +191,20 @@ export function calculateAttendanceStats(
     selectedMonthLabel,
     monthProgressPercent,
     isCurrentMonth,
+
+    // Salary & Late Deduction Analytics
+    monthlySalary: salaryAnalytics.monthlySalary,
+    currencySymbol: salaryAnalytics.currencySymbol,
+    daysInSelectedMonth: salaryAnalytics.daysInMonth,
+    baseDailyRate: salaryAnalytics.baseDailyRate,
+    hourlySalaryRate: salaryAnalytics.hourlyRate,
+    totalLateDeductions: salaryAnalytics.totalLateDeductions,
+    earnedSalaryBeforeDeductions: salaryAnalytics.earnedSalaryBeforeDeductions,
+    netPayableSalary: salaryAnalytics.netPayableSalary,
+    estimatedFullMonthPayable: salaryAnalytics.estimatedFullMonthPayable,
+    graceLateDaysUsed: salaryAnalytics.graceLateCount,
+    penalizedLateDaysCount: salaryAnalytics.penalizedLateCount,
+    remainingGraceCount: salaryAnalytics.remainingGraceCount,
   };
 }
 

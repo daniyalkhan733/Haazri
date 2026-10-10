@@ -20,8 +20,11 @@ import {
   CalendarRange,
   TrendingUp,
   TrendingDown,
-  RotateCcw
+  RotateCcw,
+  Wallet,
+  AlertTriangle
 } from 'lucide-react';
+import { calculateMonthSalary, formatCurrency, DailySalaryBreakdown } from '../../utils/salaryUtils';
 import { Modal } from '../common/Modal';
 import { AttendanceEntry, AttendanceStatus } from '../../types';
 import { format, parseISO, isValid, subMonths, addMonths, subDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -61,6 +64,34 @@ export const HistoryTable: React.FC = () => {
   const allEntries = useMemo(() => {
     return Object.values(records).sort((a, b) => b.date.localeCompare(a.date));
   }, [records]);
+
+  // Compute monthly salary analytics and 50% late deduction tracking across months
+  const allMonthsBreakdown = useMemo(() => {
+    const grouped: Record<string, Record<string, AttendanceEntry>> = {};
+    Object.values(records).forEach(e => {
+      if (e && e.date && e.date.length >= 7) {
+        const mKey = e.date.slice(0, 7);
+        if (!grouped[mKey]) grouped[mKey] = {};
+        grouped[mKey][e.date] = e;
+      }
+    });
+
+    const breakdownMap: Record<string, DailySalaryBreakdown> = {};
+
+    Object.entries(grouped).forEach(([mKey, monthRecords]) => {
+      try {
+        const monthDate = parseISO(`${mKey}-01`);
+        const res = calculateMonthSalary(monthRecords, settings, monthDate);
+        Object.entries(res.dailyBreakdown).forEach(([dKey, item]) => {
+          breakdownMap[dKey] = item;
+        });
+      } catch (e) {
+        console.error('Error calculating month salary:', e);
+      }
+    });
+
+    return breakdownMap;
+  }, [records, settings]);
 
   // Extract all distinct months available in records + current month
   const availableMonths = useMemo(() => {
@@ -170,8 +201,16 @@ export const HistoryTable: React.FC = () => {
     let absentCount = 0;
     let vacationCount = 0;
     let lateCount = 0;
+    let totalDeductions = 0;
+    let totalEarnedSalary = 0;
 
     filteredEntries.forEach(entry => {
+      const sInfo = allMonthsBreakdown[entry.date];
+      if (sInfo) {
+        totalDeductions += sInfo.deductionAmount || 0;
+        totalEarnedSalary += sInfo.dailySalaryEarned || 0;
+      }
+
       if (entry.status === 'absent') {
         absentCount++;
       } else if (entry.status === 'vacation') {
@@ -200,9 +239,12 @@ export const HistoryTable: React.FC = () => {
       lateCount,
       workedHours: Number(workedHours.toFixed(1)),
       targetHours: Number(targetHours.toFixed(1)),
-      balanceHours: Number(balanceHours.toFixed(1))
+      balanceHours: Number(balanceHours.toFixed(1)),
+      totalDeductions: Number(totalDeductions.toFixed(2)),
+      totalEarnedSalary: Number(totalEarnedSalary.toFixed(2)),
+      netPeriodSalary: Number(Math.max(0, totalEarnedSalary - totalDeductions).toFixed(2))
     };
-  }, [filteredEntries, settings.targetWorkingHours]);
+  }, [filteredEntries, settings.targetWorkingHours, allMonthsBreakdown]);
 
   const formatMonthTitle = (yyyyMm: string) => {
     try {
@@ -318,7 +360,7 @@ export const HistoryTable: React.FC = () => {
             </button>
 
             <button
-              onClick={() => exportToCSV(records)}
+              onClick={() => exportToCSV(records, 'attendance_records.csv', settings)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 text-xs font-bold transition-all active:scale-95"
             >
               <Download className="w-4 h-4" />
@@ -326,7 +368,7 @@ export const HistoryTable: React.FC = () => {
             </button>
 
             <button
-              onClick={() => exportToPDF(records, currentUser?.name)}
+              onClick={() => exportToPDF(records, currentUser?.name, settings)}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 hover:bg-brand-500/20 text-xs font-bold transition-all active:scale-95"
             >
               <FileText className="w-4 h-4" />
@@ -480,7 +522,7 @@ export const HistoryTable: React.FC = () => {
         </div>
 
         {/* Filtered Period Live Summary Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
           <div className="p-3 rounded-2xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/40">
             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Logs</p>
             <p className="text-base font-black font-mono text-slate-900 dark:text-white">{periodStats.totalLogs}</p>
@@ -520,6 +562,26 @@ export const HistoryTable: React.FC = () => {
                 : periodStats.balanceHours < 0 
                   ? `${periodStats.balanceHours}h Lag` 
                   : '0.0h'}
+            </p>
+          </div>
+
+          <div className={`p-3 rounded-2xl border ${
+            periodStats.totalDeductions > 0 
+              ? 'bg-rose-500/10 border-rose-500/25 text-rose-600 dark:text-rose-400' 
+              : 'bg-slate-100/70 dark:bg-slate-800/50 border-slate-200/50 dark:border-slate-700/40 text-slate-700 dark:text-slate-300'
+          }`}>
+            <p className="text-[10px] font-bold uppercase tracking-wider">Late Penalty (50%)</p>
+            <p className="text-base font-black font-mono truncate">
+              {periodStats.totalDeductions > 0 
+                ? `-${formatCurrency(periodStats.totalDeductions, settings.currencySymbol || 'Rs')}` 
+                : `${settings.currencySymbol || 'Rs'} 0.00`}
+            </p>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+            <p className="text-[10px] font-bold uppercase tracking-wider">Net Period Salary</p>
+            <p className="text-base font-black font-mono truncate">
+              {formatCurrency(periodStats.netPeriodSalary, settings.currencySymbol || 'Rs')}
             </p>
           </div>
         </div>
@@ -568,13 +630,14 @@ export const HistoryTable: React.FC = () => {
                 <th className="py-3 px-4">Worked</th>
                 <th className="py-3 px-4">Punctuality</th>
                 <th className="py-3 px-4">Lag / Lead</th>
+                <th className="py-3 px-4">Daily Salary & Deduction</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-dark-border/40 text-xs">
               {filteredEntries.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-slate-400">
+                  <td colSpan={8} className="py-8 text-center text-slate-400">
                     No attendance records match your filter criteria.
                   </td>
                 </tr>
@@ -694,6 +757,68 @@ export const HistoryTable: React.FC = () => {
                           } else {
                             return <span className="text-slate-400 font-normal">0.0h</span>;
                           }
+                        })()}
+                      </td>
+                      <td className="py-3 px-4 font-mono">
+                        {(() => {
+                          const salaryInfo = allMonthsBreakdown[entry.date];
+                          const currency = settings.currencySymbol || 'Rs';
+                          if (isAbsent) {
+                            return (
+                              <div className="flex flex-col">
+                                <span className="text-slate-400 font-bold">{currency} 0.00</span>
+                                <span className="text-[10px] text-rose-500 font-semibold">Absent</span>
+                              </div>
+                            );
+                          }
+                          if (isVacation) {
+                            return (
+                              <div className="flex flex-col">
+                                <span className="text-slate-400 font-bold">-</span>
+                                <span className="text-[10px] text-purple-500 font-semibold">Vacation</span>
+                              </div>
+                            );
+                          }
+                          if (!salaryInfo || (settings.monthlySalary || 0) <= 0) {
+                            return <span className="text-slate-400">-</span>;
+                          }
+
+                          if (salaryInfo.isPenalized) {
+                            return (
+                              <div className="flex flex-col">
+                                <span className="font-bold text-rose-600 dark:text-rose-400">
+                                  {formatCurrency(salaryInfo.netDailySalary, currency)}
+                                </span>
+                                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/30 w-fit mt-0.5">
+                                  -50% Penalty (-{formatCurrency(salaryInfo.deductionAmount, currency)})
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          if (salaryInfo.isGrace) {
+                            return (
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 dark:text-white">
+                                  {formatCurrency(salaryInfo.netDailySalary, currency)}
+                                </span>
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 w-fit mt-0.5">
+                                  Grace Late #{salaryInfo.lateIndexInMonth}/3 (0% off)
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div className="flex flex-col">
+                              <span className="font-bold text-slate-900 dark:text-white">
+                                {formatCurrency(salaryInfo.netDailySalary, currency)}
+                              </span>
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                                Full Shift Earned
+                              </span>
+                            </div>
+                          );
                         })()}
                       </td>
                       <td className="py-3 px-4 text-right">

@@ -25,6 +25,10 @@ const DEFAULT_SETTINGS: UserSettings = {
   clockInReminderTime: '12:30',
   clockOutReminderTime: '21:00',
   theme: 'dark',
+  monthlySalary: 50000,
+  currencySymbol: 'Rs',
+  lateGraceLimit: 3,
+  latePenaltyPercent: 50,
 };
 
 interface ToastMessage {

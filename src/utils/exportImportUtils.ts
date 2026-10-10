@@ -1,26 +1,93 @@
-import { AttendanceEntry, AttendanceStatus } from '../types';
+import { AttendanceEntry, AttendanceStatus, UserSettings } from '../types';
 import { formatDuration, formatDateDisplay, formatTimeDisplay, calculateLateMinutes, calculateWorkedMinutes, calculateOvertimeMinutes } from './timeUtils';
+import { calculateMonthSalary, formatCurrency } from './salaryUtils';
+import { parseISO } from 'date-fns';
+
+/**
+ * Helper to get salary breakdown map for all entries
+ */
+function getSalaryBreakdownForRecords(records: Record<string, AttendanceEntry>, settings?: UserSettings) {
+  if (!settings || !settings.monthlySalary) return null;
+  const grouped: Record<string, Record<string, AttendanceEntry>> = {};
+  Object.values(records).forEach(e => {
+    if (e && e.date && e.date.length >= 7) {
+      const mKey = e.date.slice(0, 7);
+      if (!grouped[mKey]) grouped[mKey] = {};
+      grouped[mKey][e.date] = e;
+    }
+  });
+
+  const breakdownMap: Record<string, any> = {};
+  Object.entries(grouped).forEach(([mKey, monthRecords]) => {
+    try {
+      const monthDate = parseISO(`${mKey}-01`);
+      const res = calculateMonthSalary(monthRecords, settings, monthDate);
+      Object.entries(res.dailyBreakdown).forEach(([dKey, item]) => {
+        breakdownMap[dKey] = item;
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  });
+  return breakdownMap;
+}
 
 /**
  * Export attendance records to CSV file
  */
-export function exportToCSV(records: Record<string, AttendanceEntry>, fileName: string = 'attendance_records.csv') {
+export function exportToCSV(
+  records: Record<string, AttendanceEntry>, 
+  fileName: string = 'attendance_records.csv',
+  settings?: UserSettings
+) {
   const sorted = Object.values(records).sort((a, b) => b.date.localeCompare(a.date));
+  const salaryMap = getSalaryBreakdownForRecords(records, settings);
+  const currency = settings?.currencySymbol || 'Rs';
   
-  const headers = ['Date', 'Login Time', 'Logout Time', 'Worked Hours', 'Late Minutes', 'Overtime Minutes', 'Status', 'Mood', 'Notes', 'Today Work'];
+  const headers = salaryMap 
+    ? ['Date', 'Login Time', 'Logout Time', 'Worked Hours', 'Late Minutes', 'Overtime Minutes', 'Status', `Daily Salary (${currency})`, `Late Penalty 50% (${currency})`, `Net Daily Salary (${currency})`, 'Late Grace / Penalty Note', 'Notes']
+    : ['Date', 'Login Time', 'Logout Time', 'Worked Hours', 'Late Minutes', 'Overtime Minutes', 'Status', 'Mood', 'Notes', 'Today Work'];
   
-  const rows = sorted.map(r => [
-    r.date,
-    r.loginTime ? formatTimeDisplay(r.loginTime) : '',
-    r.logoutTime ? formatTimeDisplay(r.logoutTime) : '',
-    (r.workedMinutes / 60).toFixed(2),
-    r.lateMinutes || 0,
-    r.overtimeMinutes || 0,
-    r.status,
-    r.mood || '',
-    `"${(r.notes || '').replace(/"/g, '""')}"`,
-    `"${(r.todayWork || '').replace(/"/g, '""')}"`
-  ]);
+  const rows = sorted.map(r => {
+    const sInfo = salaryMap ? salaryMap[r.date] : null;
+    let lateNote = '';
+    if (sInfo) {
+      if (sInfo.isPenalized) lateNote = `Late #${sInfo.lateIndexInMonth} (50% Penalty Applied)`;
+      else if (sInfo.isGrace) lateNote = `Late #${sInfo.lateIndexInMonth} (Grace Covered)`;
+      else if (sInfo.isLate) lateNote = 'Late';
+      else lateNote = 'On Time';
+    }
+
+    if (salaryMap) {
+      return [
+        r.date,
+        r.loginTime ? formatTimeDisplay(r.loginTime) : '',
+        r.logoutTime ? formatTimeDisplay(r.logoutTime) : '',
+        (r.workedMinutes / 60).toFixed(2),
+        r.lateMinutes || 0,
+        r.overtimeMinutes || 0,
+        r.status,
+        sInfo ? sInfo.dailySalaryEarned.toFixed(2) : '0.00',
+        sInfo ? sInfo.deductionAmount.toFixed(2) : '0.00',
+        sInfo ? sInfo.netDailySalary.toFixed(2) : '0.00',
+        lateNote,
+        `"${(r.notes || '').replace(/"/g, '""')}"`
+      ];
+    }
+
+    return [
+      r.date,
+      r.loginTime ? formatTimeDisplay(r.loginTime) : '',
+      r.logoutTime ? formatTimeDisplay(r.logoutTime) : '',
+      (r.workedMinutes / 60).toFixed(2),
+      r.lateMinutes || 0,
+      r.overtimeMinutes || 0,
+      r.status,
+      r.mood || '',
+      `"${(r.notes || '').replace(/"/g, '""')}"`,
+      `"${(r.todayWork || '').replace(/"/g, '""')}"`
+    ];
+  });
 
   const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
   const encodedUri = encodeURI(csvContent);
@@ -35,7 +102,11 @@ export function exportToCSV(records: Record<string, AttendanceEntry>, fileName: 
 /**
  * Export attendance report to PDF using jsPDF dynamically
  */
-export async function exportToPDF(records: Record<string, AttendanceEntry>, userName: string = 'User') {
+export async function exportToPDF(
+  records: Record<string, AttendanceEntry>, 
+  userName: string = 'User',
+  settings?: UserSettings
+) {
   try {
     const { jsPDF } = await import('jspdf');
     const autoTableModule = await import('jspdf-autotable');
@@ -43,41 +114,71 @@ export async function exportToPDF(records: Record<string, AttendanceEntry>, user
 
     const doc = new jsPDF();
     const sorted = Object.values(records).sort((a, b) => b.date.localeCompare(a.date));
+    const salaryMap = getSalaryBreakdownForRecords(records, settings);
+    const currency = settings?.currencySymbol || 'Rs';
 
     // Header Title
-    doc.setFontSize(20);
+    doc.setFontSize(18);
     doc.setTextColor(12, 163, 235); // Brand color
-    doc.text('Haazri Attendance & Work Hours Report', 14, 20);
+    doc.text('Haazri Attendance & Salary Report', 14, 18);
 
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(100, 100, 100);
-    doc.text(`Generated for: ${userName} | Date: ${new Date().toLocaleDateString()}`, 14, 28);
+    const subText = settings?.monthlySalary 
+      ? `Generated for: ${userName} | Date: ${new Date().toLocaleDateString()} | Monthly Salary: ${formatCurrency(settings.monthlySalary, currency)} (Rule: 3 Late Grace, 50% deduction after day 3)`
+      : `Generated for: ${userName} | Date: ${new Date().toLocaleDateString()}`;
+    doc.text(subText, 14, 25);
 
-    const tableData = sorted.map(r => [
-      r.date,
-      r.loginTime ? formatTimeDisplay(r.loginTime) : '--',
-      r.logoutTime ? formatTimeDisplay(r.logoutTime) : '--',
-      formatDuration(r.workedMinutes),
-      r.lateMinutes ? `${r.lateMinutes}m` : '0m',
-      r.overtimeMinutes ? `${r.overtimeMinutes}m` : '0m',
-      r.status.toUpperCase(),
-      r.notes || '-'
-    ]);
+    const headers = salaryMap 
+      ? [['Date', 'Login', 'Logout', 'Worked', 'Status', 'Daily Salary', '50% Late Penalty', 'Net Salary', 'Rule Status']]
+      : [['Date', 'Login', 'Logout', 'Worked', 'Late', 'Overtime', 'Status', 'Notes']];
+
+    const tableData = sorted.map(r => {
+      const sInfo = salaryMap ? salaryMap[r.date] : null;
+      if (salaryMap && sInfo) {
+        let ruleStatus = 'On Time';
+        if (sInfo.isPenalized) ruleStatus = `Late #${sInfo.lateIndexInMonth} (50% Off)`;
+        else if (sInfo.isGrace) ruleStatus = `Late #${sInfo.lateIndexInMonth} (Grace)`;
+
+        return [
+          r.date,
+          r.loginTime ? formatTimeDisplay(r.loginTime) : '--',
+          r.logoutTime ? formatTimeDisplay(r.logoutTime) : '--',
+          formatDuration(r.workedMinutes),
+          r.status.toUpperCase(),
+          `${currency} ${sInfo.dailySalaryEarned.toFixed(2)}`,
+          sInfo.deductionAmount > 0 ? `-${currency} ${sInfo.deductionAmount.toFixed(2)}` : `${currency} 0.00`,
+          `${currency} ${sInfo.netDailySalary.toFixed(2)}`,
+          ruleStatus
+        ];
+      }
+
+      return [
+        r.date,
+        r.loginTime ? formatTimeDisplay(r.loginTime) : '--',
+        r.logoutTime ? formatTimeDisplay(r.logoutTime) : '--',
+        formatDuration(r.workedMinutes),
+        r.lateMinutes ? `${r.lateMinutes}m` : '0m',
+        r.overtimeMinutes ? `${r.overtimeMinutes}m` : '0m',
+        r.status.toUpperCase(),
+        r.notes || '-'
+      ];
+    });
 
     autoTable(doc, {
-      startY: 34,
-      head: [['Date', 'Login', 'Logout', 'Worked', 'Late', 'Overtime', 'Status', 'Notes']],
+      startY: 30,
+      head: headers,
       body: tableData,
       theme: 'grid',
       headStyles: { fillColor: [12, 163, 235], textColor: 255 },
-      styles: { fontSize: 8 }
+      styles: { fontSize: 7 }
     });
 
-    doc.save(`Haazri_Attendance_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
+    doc.save(`Haazri_Attendance_Salary_Report_${new Date().toISOString().slice(0, 10)}.pdf`);
   } catch (err) {
     console.error('Failed to generate PDF:', err);
     alert('Failed to generate PDF. Falling back to CSV export.');
-    exportToCSV(records);
+    exportToCSV(records, 'attendance_records.csv', settings);
   }
 }
 
